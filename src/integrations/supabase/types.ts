@@ -14,7 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      documents: {
+        Row: {
+          chunk_count: number | null
+          content: string | null
+          created_at: string
+          embedding_status: string
+          id: string
+          name: string
+          size: number
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          chunk_count?: number | null
+          content?: string | null
+          created_at?: string
+          embedding_status?: string
+          id?: string
+          name: string
+          size: number
+          status?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          chunk_count?: number | null
+          content?: string | null
+          created_at?: string
+          embedding_status?: string
+          id?: string
+          name?: string
+          size?: number
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
