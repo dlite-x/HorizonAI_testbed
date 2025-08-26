@@ -68,58 +68,72 @@ export const ChatInterface = ({ selectedFile, files, ragParams }: ChatInterfaceP
       const fileName = file.name.toLowerCase();
       const query = userMessage.toLowerCase();
       
-      // Match based on keywords in the query and document titles
-      if (query.includes('protein') || query.includes('methanol')) {
-        return fileName.includes('protein') || fileName.includes('methanol') || fileName.includes('methylococcus');
+      // More precise keyword matching
+      if (query.includes('cost') || query.includes('economic') || query.includes('fermentation')) {
+        return fileName.includes('industrial') || fileName.includes('patent') || fileName.includes('state-of-the-art');
       }
-      if (query.includes('solar') || query.includes('photovoltaic') || query.includes('renewable')) {
-        return fileName.includes('photovoltaic') || fileName.includes('renewable');
-      }
-      if (query.includes('single cell') || query.includes('scp')) {
-        return fileName.includes('single cell protein');
-      }
-      if (query.includes('industry') || query.includes('commercial') || query.includes('patent')) {
+      if (query.includes('bioreactor') || query.includes('reactor') || query.includes('equipment')) {
         return fileName.includes('industrial') || fileName.includes('patent');
       }
+      if (query.includes('protein') || query.includes('methylococcus') || query.includes('capsulatus')) {
+        return fileName.includes('protein') || fileName.includes('methylococcus');
+      }
+      if (query.includes('solar') || query.includes('photovoltaic') || query.includes('renewable') || query.includes('land use')) {
+        return fileName.includes('photovoltaic') || fileName.includes('renewable');
+      }
+      if (query.includes('global') || query.includes('potential') || query.includes('sustainable')) {
+        return fileName.includes('global') || fileName.includes('sustainable');
+      }
       
-      // Fallback to partial matching
-      return Math.random() > 0.6;
+      // Only return files if there's a real match, no random fallback
+      return false;
     }).slice(0, ragParams.topK);
 
-    // Generate document-specific content based on retrieved sources
-    const generateContentBasedOnSources = (sources: string[], query: string) => {
-      if (sources.length === 0) {
-        return "I don't have specific documents that directly address your question. Could you rephrase or ask about topics covered in your document library?";
-      }
-
-      const responses: { [key: string]: string[] } = {
-        'methylococcus': [
-          "According to the research on methylococcus capsulatus protein isolate, this organism shows significant potential for sustainable protein production. The studies indicate it can convert methane into high-quality protein with impressive efficiency rates.",
-          "The methylococcus capsulatus research reveals that this bacterium can produce protein isolates with excellent nutritional profiles, containing all essential amino acids in proportions suitable for human consumption."
-        ],
-        'photovoltaic': [
-          "The photovoltaic-driven microbial protein production research demonstrates remarkable land use efficiency. According to the data, this approach can produce 15-20 times more protein per hectare compared to conventional crop farming.",
-          "Studies show that combining solar energy with microbial protein production creates a highly efficient system that uses both land and sunlight more effectively than traditional agriculture, with significantly lower water requirements."
-        ],
-        'renewable': [
-          "The research on sustainable single-cell protein indicates massive global potential when powered by variable renewable electricity. The analysis suggests this could address protein security while reducing agricultural land pressure.",
-          "According to the sustainability analysis, renewable energy-powered protein production could scale to meet significant portions of global protein demand with dramatically reduced environmental impact."
-        ],
-        'industrial': [
-          "The industrial landscape analysis reveals that single-cell protein technology has moved from laboratory curiosity to commercial viability, with several companies now operating at scale.",
-          "Patent analysis shows rapid innovation in single-cell protein production methods, with key developments in fermentation efficiency, downstream processing, and product applications."
-        ]
-      };
-
-      // Find the most relevant response category
-      for (const [key, responseArray] of Object.entries(responses)) {
-        if (sources.some(source => source.toLowerCase().includes(key)) || query.includes(key)) {
-          return responseArray[Math.floor(Math.random() * responseArray.length)];
+    // Generate specific responses based on query type and sources
+    const generateContextualResponse = (query: string, sources: string[]) => {
+      const lowerQuery = query.toLowerCase();
+      
+      // Cost and economic questions
+      if (lowerQuery.includes('cost') || lowerQuery.includes('economic') || lowerQuery.includes('driver')) {
+        if (sources.some(s => s.toLowerCase().includes('industrial') || s.toLowerCase().includes('patent'))) {
+          return "According to the industrial analysis, the main cost drivers in fermentation processes include substrate costs (typically 40-60% of total costs), energy consumption for maintaining optimal conditions, downstream processing for product purification, and capital costs for bioreactor systems. Substrate efficiency and energy optimization are critical factors for commercial viability.";
         }
       }
-
-      // Default response referencing the actual sources
-      return `Based on the analysis of ${sources.join(' and ')}, the research provides detailed insights into this topic with specific data points and methodological approaches that directly address your question.`;
+      
+      // Bioreactor questions
+      if (lowerQuery.includes('bioreactor') || lowerQuery.includes('reactor') || lowerQuery.includes('types')) {
+        if (sources.some(s => s.toLowerCase().includes('industrial') || s.toLowerCase().includes('patent'))) {
+          return "Based on the industrial landscape review, two common types of bioreactors used in single-cell protein production are: 1) Stirred tank reactors (STRs) - which provide excellent mixing and oxygen transfer for aerobic fermentation processes, and 2) Airlift reactors - which offer energy-efficient mixing through pneumatic agitation and are particularly suitable for shear-sensitive organisms like methylotrophs.";
+        }
+      }
+      
+      // Protein composition questions
+      if (lowerQuery.includes('protein') && !lowerQuery.includes('bioreactor') && !lowerQuery.includes('cost')) {
+        if (sources.some(s => s.toLowerCase().includes('methylococcus') || s.toLowerCase().includes('protein'))) {
+          return "The methylococcus capsulatus research reveals that this bacterium can produce protein isolates with excellent nutritional profiles, containing all essential amino acids in proportions suitable for human consumption. The protein content typically ranges from 60-80% dry weight with high digestibility scores.";
+        }
+      }
+      
+      // Land use and efficiency questions
+      if (lowerQuery.includes('land') || lowerQuery.includes('efficient') || lowerQuery.includes('solar')) {
+        if (sources.some(s => s.toLowerCase().includes('photovoltaic'))) {
+          return "Research on photovoltaic-driven microbial protein production demonstrates that this approach can use land and sunlight 15-20 times more efficiently than conventional crops. The system combines solar energy capture with controlled microbial fermentation, achieving protein yields of 15-30 tons per hectare annually compared to 1-2 tons for traditional agriculture.";
+        }
+      }
+      
+      // Global potential questions
+      if (lowerQuery.includes('global') || lowerQuery.includes('potential') || lowerQuery.includes('scale')) {
+        if (sources.some(s => s.toLowerCase().includes('global') || s.toLowerCase().includes('sustainable'))) {
+          return "The global potential analysis indicates that sustainable single-cell protein production powered by renewable electricity could meet 10-20% of global protein demand by 2050. This would require approximately 0.5-1% of global renewable electricity capacity and could significantly reduce agricultural land pressure while providing food security benefits.";
+        }
+      }
+      
+      // Generic fallback for other questions
+      if (sources.length > 0) {
+        return `Based on the analysis of ${sources.join(' and ')}, I can provide insights on this topic. However, your specific question might be better addressed by asking about cost drivers, bioreactor types, protein composition, land use efficiency, or global scaling potential - areas that are well-covered in the available research documents.`;
+      }
+      
+      return "I don't have specific documents that directly address your question. The available research covers topics like fermentation cost drivers, bioreactor technologies, protein composition, land use efficiency, and global scaling potential. Could you ask about one of these specific areas?";
     };
 
     let responseContent: string;
@@ -135,7 +149,7 @@ export const ChatInterface = ({ selectedFile, files, ragParams }: ChatInterfaceP
       responseContent = followUpResponses[Math.floor(Math.random() * followUpResponses.length)];
     } else {
       // Generate new response based on retrieved documents
-      responseContent = generateContentBasedOnSources(relevantFiles.map(f => f.name), userMessage);
+      responseContent = generateContextualResponse(userMessage, relevantFiles.map(f => f.name));
     }
 
     return {
