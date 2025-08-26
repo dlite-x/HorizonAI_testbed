@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { FileData } from "./FileExplorer";
 import { RAGParams } from "./RAGParameters";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ChatMessage {
   id: string;
@@ -54,150 +56,58 @@ export const ChatInterface = ({ selectedFile, files, ragParams }: ChatInterfaceP
     scrollToBottom();
   }, [messages]);
 
-  const simulateAIResponse = (userMessage: string, conversationHistory: ChatMessage[]): ChatMessage => {
-    // Get recent AI messages for context based on ragParams
-    const recentMessages = conversationHistory.slice(-ragParams.contextWindow);
-    const lastAIMessage = recentMessages.filter(m => m.type === 'ai').pop();
-    
-    // Detect follow-up questions
-    const followUpWords = ['tell me more', 'more details', 'elaborate', 'explain further', 'continue', 'what else', 'more about'];
-    const isFollowUp = followUpWords.some(phrase => userMessage.toLowerCase().includes(phrase.toLowerCase()));
-    
-    // Get relevant files based on query content with more flexible matching
-    const relevantFiles = files.filter(file => {
-      const fileName = file.name.toLowerCase();
-      const query = userMessage.toLowerCase();
+  const simulateAIResponse = useCallback(async (userMessage: string): Promise<ChatMessage> => {
+    try {
+      // Get selected document IDs for context
+      const documentIds = selectedFile ? [selectedFile.id] : files.map(f => f.id);
       
-      // Specific keyword matching with broader coverage
-      if (query.includes('cost') || query.includes('economic') || query.includes('fermentation')) {
-        return fileName.includes('industrial') || fileName.includes('patent') || fileName.includes('state-of-the-art');
-      }
-      if (query.includes('bioreactor') || query.includes('reactor') || query.includes('equipment')) {
-        return fileName.includes('industrial') || fileName.includes('patent');
-      }
-      
-      // Protein-related queries (much broader matching)
-      if (query.includes('protein') || query.includes('methylococcus') || query.includes('capsulatus') || 
-          query.includes('strain') || query.includes('food') || query.includes('application') || 
-          query.includes('human') || query.includes('consumption') || query.includes('approved') ||
-          query.includes('species') || query.includes('organism') || query.includes('microbial')) {
-        return fileName.includes('protein') || fileName.includes('methylococcus') || fileName.includes('single cell');
-      }
-      
-      // Energy and efficiency queries
-      if (query.includes('solar') || query.includes('photovoltaic') || query.includes('renewable') || 
-          query.includes('land use') || query.includes('efficient') || query.includes('sunlight')) {
-        return fileName.includes('photovoltaic') || fileName.includes('renewable');
-      }
-      
-      // Global and sustainability queries
-      if (query.includes('global') || query.includes('potential') || query.includes('sustainable') ||
-          query.includes('scale') || query.includes('future') || query.includes('production')) {
-        return fileName.includes('global') || fileName.includes('sustainable') || fileName.includes('protein');
-      }
-      
-      // Industrial and commercial queries
-      if (query.includes('industry') || query.includes('commercial') || query.includes('patent') ||
-          query.includes('company') || query.includes('market') || query.includes('business')) {
-        return fileName.includes('industrial') || fileName.includes('patent') || fileName.includes('landscape');
-      }
-      
-      // If no specific match, include Single Cell Protein papers as they're comprehensive
-      if (fileName.includes('single cell protein') || fileName.includes('state-of-the-art')) {
-        return true;
-      }
-      
-      return false;
-    }).slice(0, ragParams.topK);
+      // Call the real RAG function
+      const { data, error } = await supabase.functions.invoke('rag-query', {
+        body: {
+          query: userMessage,
+          topK: ragParams.topK,
+          documentIds
+        }
+      });
 
-    // Generate specific responses based on query type and sources
-    const generateContextualResponse = (query: string, sources: string[]) => {
-      const lowerQuery = query.toLowerCase();
-      
-      // Methane and microbe questions - HIGH PRIORITY
-      if (lowerQuery.includes('microbe') || lowerQuery.includes('methane') || lowerQuery.includes('methanotroph') || 
-          lowerQuery.includes('bacteria') || lowerQuery.includes('organism')) {
-        if (sources.length > 0) {
-          return "Based on the single-cell protein research, the primary microbes used in methane fermentation include: **Methylococcus capsulatus** (Bath strain) - the most commercialized methanotroph for protein production, capable of converting methane to high-quality biomass with 65-80% protein content. **Methylomonas** species - efficient methane converters with rapid growth rates and excellent amino acid profiles. **Methylobacter** species - known for robust growth on methane with high conversion efficiency. These methanotrophic bacteria are obligate methane consumers that represent the foundation of industrial gas fermentation for sustainable protein production.";
-        }
+      if (error) {
+        console.error('RAG query error:', error);
+        toast.error('Error processing your question. Please try again.');
+        return {
+          id: Date.now().toString(),
+          content: "I'm sorry, I encountered an error while processing your question. Please try again or check if the documents have been properly embedded.",
+          type: 'ai',
+          timestamp: new Date(),
+          sources: [],
+          flagged: false
+        };
       }
-      
-      // Cost and economic questions
-      if (lowerQuery.includes('cost') || lowerQuery.includes('economic') || lowerQuery.includes('driver')) {
-        if (sources.some(s => s.toLowerCase().includes('industrial') || s.toLowerCase().includes('patent'))) {
-          return "According to the industrial analysis, the main cost drivers in fermentation processes include substrate costs (typically 40-60% of total costs), energy consumption for maintaining optimal conditions, downstream processing for product purification, and capital costs for bioreactor systems. Substrate efficiency and energy optimization are critical factors for commercial viability.";
-        }
-      }
-      
-      // Bioreactor questions
-      if (lowerQuery.includes('bioreactor') || lowerQuery.includes('reactor') || lowerQuery.includes('types')) {
-        if (sources.some(s => s.toLowerCase().includes('industrial') || s.toLowerCase().includes('patent'))) {
-          return "Based on the industrial landscape review, two common types of bioreactors used in single-cell protein production are: 1) Stirred tank reactors (STRs) - which provide excellent mixing and oxygen transfer for aerobic fermentation processes, and 2) Airlift reactors - which offer energy-efficient mixing through pneumatic agitation and are particularly suitable for shear-sensitive organisms like methylotrophs.";
-        }
-      }
-      
-      // Strain and food application questions
-      if (lowerQuery.includes('strain') || lowerQuery.includes('approved') || lowerQuery.includes('food') || 
-          lowerQuery.includes('human') || lowerQuery.includes('consumption') || lowerQuery.includes('species')) {
-        if (sources.some(s => s.toLowerCase().includes('protein') || s.toLowerCase().includes('single cell'))) {
-          return "Based on the single-cell protein research, three key strains approved for human food applications include: 1) Methylococcus capsulatus (Bath) - approved in EU and used for protein isolates, 2) Candida utilis (torula yeast) - approved globally for protein supplements, and 3) Spirulina platensis - approved worldwide as a nutritional supplement. These organisms have undergone extensive safety testing and regulatory approval processes.";
-        }
-      }
-      
-      // Protein composition questions
-      if (lowerQuery.includes('protein') && !lowerQuery.includes('bioreactor') && !lowerQuery.includes('cost') && !lowerQuery.includes('strain')) {
-        if (sources.some(s => s.toLowerCase().includes('methylococcus') || s.toLowerCase().includes('protein'))) {
-          return "The methylococcus capsulatus research reveals that this bacterium can produce protein isolates with excellent nutritional profiles, containing all essential amino acids in proportions suitable for human consumption. The protein content typically ranges from 60-80% dry weight with high digestibility scores.";
-        }
-      }
-      
-      // Land use and efficiency questions
-      if (lowerQuery.includes('land') || lowerQuery.includes('efficient') || lowerQuery.includes('solar')) {
-        if (sources.some(s => s.toLowerCase().includes('photovoltaic'))) {
-          return "Research on photovoltaic-driven microbial protein production demonstrates that this approach can use land and sunlight 15-20 times more efficiently than conventional crops. The system combines solar energy capture with controlled microbial fermentation, achieving protein yields of 15-30 tons per hectare annually compared to 1-2 tons for traditional agriculture.";
-        }
-      }
-      
-      // Global potential questions
-      if (lowerQuery.includes('global') || lowerQuery.includes('potential') || lowerQuery.includes('scale')) {
-        if (sources.some(s => s.toLowerCase().includes('global') || s.toLowerCase().includes('sustainable'))) {
-          return "The global potential analysis indicates that sustainable single-cell protein production powered by renewable electricity could meet 10-20% of global protein demand by 2050. This would require approximately 0.5-1% of global renewable electricity capacity and could significantly reduce agricultural land pressure while providing food security benefits.";
-        }
-      }
-      
-      // Generic fallback for other questions
-      if (sources.length > 0) {
-        return `Based on the analysis of ${sources.join(' and ')}, I can provide insights on this topic. However, your specific question might be better addressed by asking about cost drivers, bioreactor types, protein composition, land use efficiency, or global scaling potential - areas that are well-covered in the available research documents.`;
-      }
-      
-      return "I don't have specific documents that directly address your question. The available research covers topics like fermentation cost drivers, bioreactor technologies, protein composition, land use efficiency, and global scaling potential. Could you ask about one of these specific areas?";
-    };
 
-    let responseContent: string;
-    
-    if (isFollowUp && lastAIMessage && lastAIMessage.sources) {
-      // Generate detailed follow-up using previous sources
-      const previousSources = lastAIMessage.sources;
-      const followUpResponses = [
-        `Diving deeper into the findings from ${previousSources.join(' and ')}: The research methodology involved controlled studies with specific parameters. The results show statistical significance across multiple metrics, including efficiency rates, cost-effectiveness, and environmental impact assessments.`,
-        `Additional details from the ${previousSources.length > 1 ? 'studies' : 'study'}: The data reveals several key performance indicators that weren't mentioned in my initial summary. These include scalability factors, energy conversion efficiency, and comparative analysis with traditional methods.`,
-        `Further analysis of ${previousSources.join(' and ')}: The research presents compelling evidence with detailed case studies, economic modeling, and projections for commercial implementation. The technical specifications and operational parameters are thoroughly documented.`
-      ];
-      responseContent = followUpResponses[Math.floor(Math.random() * followUpResponses.length)];
-    } else {
-      // Generate new response based on retrieved documents
-      responseContent = generateContextualResponse(userMessage, relevantFiles.map(f => f.name));
+      const { answer, sources } = data;
+      
+      return {
+        id: Date.now().toString(),
+        content: answer || "I couldn't find relevant information to answer your question. Please try rephrasing or ask about different topics.",
+        type: 'ai',
+        timestamp: new Date(),
+        sources: sources?.map((s: any) => s.document) || [],
+        flagged: false
+      };
+
+    } catch (error) {
+      console.error('Error in AI response:', error);
+      toast.error('Failed to get AI response');
+      
+      return {
+        id: Date.now().toString(),
+        content: "I'm experiencing technical difficulties. Please try again later.",
+        type: 'ai',
+        timestamp: new Date(),
+        sources: [],
+        flagged: false
+      };
     }
-
-    return {
-      id: Date.now().toString(),
-      type: 'ai',
-      content: responseContent,
-      timestamp: new Date(),
-      sources: relevantFiles.map(f => f.name),
-      flagged: false
-    };
-  };
+  }, [selectedFile, files, ragParams.topK]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -213,12 +123,15 @@ export const ChatInterface = ({ selectedFile, files, ragParams }: ChatInterfaceP
     setInputMessage("");
     setIsLoading(true);
 
-    // Simulate AI processing time
-    setTimeout(() => {
-      const aiResponse = simulateAIResponse(inputMessage, messages);
+    try {
+      const aiResponse = await simulateAIResponse(inputMessage);
       setMessages(prev => [...prev, aiResponse]);
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      toast.error('Failed to get response from AI');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

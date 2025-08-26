@@ -15,6 +15,8 @@ import {
   Database
 } from "lucide-react";
 import { FileData } from "@/components/FileExplorer";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface FileManagerProps {
   files: FileData[];
@@ -54,22 +56,81 @@ export const FileManager = ({ files, selectedFile, onFileSelect, onFilesAdded }:
     setIsDragOver(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
     
     const droppedFiles = Array.from(e.dataTransfer.files);
-    const newFileData: FileData[] = droppedFiles.map((file, index) => ({
-      id: `uploaded-${Date.now()}-${index}`,
-      name: file.name,
-      size: file.size,
-      type: file.type || 'application/octet-stream',
-      lastModified: new Date(file.lastModified),
-      content: `Uploaded content from ${file.name}`
-    }));
+    
+    for (const file of droppedFiles) {
+      try {
+        // Read file content
+        const text = await file.text();
+        
+        // Store document in database
+        const { data: document, error: dbError } = await supabase
+          .from('documents')
+          .insert({
+            name: file.name,
+            size: file.size,
+            type: file.type || 'application/octet-stream',
+            content: text,
+            status: 'uploaded',
+            embedding_status: 'pending'
+          })
+          .select()
+          .single();
 
-    onFilesAdded(newFileData);
-    setUploadedFiles(prev => [...prev, ...newFileData.map(f => f.id)]);
+        if (dbError) {
+          console.error('Database error:', dbError);
+          toast.error(`Failed to upload ${file.name}`);
+          continue;
+        }
+
+        // Create file data for UI
+        const newFileData: FileData = {
+          id: document.id,
+          name: file.name,
+          size: file.size,
+          type: file.type || 'application/octet-stream',
+          lastModified: new Date(file.lastModified),
+          content: text
+        };
+
+        onFilesAdded([newFileData]);
+        setUploadedFiles(prev => [...prev, document.id]);
+
+        // Start embedding process
+        setEmbeddingFiles(prev => [...prev, document.id]);
+        
+        const { error: embedError } = await supabase.functions.invoke('embed-document', {
+          body: {
+            documentId: document.id,
+            content: text
+          }
+        });
+
+        if (embedError) {
+          console.error('Embedding error:', embedError);
+          toast.error(`Failed to embed ${file.name}`);
+          setEmbeddingFiles(prev => prev.filter(id => id !== document.id));
+        } else {
+          toast.success(`${file.name} uploaded and embedding started`);
+          
+          // Simulate embedding completion (in reality, you'd listen to status updates)
+          setTimeout(() => {
+            setEmbeddingFiles(prev => prev.filter(id => id !== document.id));
+            setEmbeddedFiles(prev => [...prev, document.id]);
+            setUploadedFiles(prev => prev.filter(id => id !== document.id));
+            toast.success(`${file.name} embedded successfully`);
+          }, 3000);
+        }
+
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast.error(`Failed to upload ${file.name}`);
+      }
+    }
   }, [onFilesAdded]);
 
   const handleEmbedFile = async (fileId: string) => {
