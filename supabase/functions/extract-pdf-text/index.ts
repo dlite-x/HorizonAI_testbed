@@ -532,4 +532,3 @@ This document contains comprehensive research on single-cell protein production,
 This research provides detailed insights into the technical, economic, and regulatory aspects of sustainable protein production technologies.
 `;
 }
-`
