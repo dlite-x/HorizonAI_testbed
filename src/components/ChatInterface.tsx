@@ -111,7 +111,7 @@ export const ChatInterface = ({ selectedFile, files }: ChatInterfaceProps) => {
           <div>
             <h2 className="text-lg font-semibold text-foreground">Horizon HubAssist</h2>
             <p className="text-sm text-muted-foreground">
-              AI Document Assistant • {files.length} documents indexed
+              interact with the beta Research, EcoAssist, and Enterprise AI tool
             </p>
           </div>
           <div className="ml-auto">
