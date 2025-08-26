@@ -6,6 +6,7 @@ import { EmbeddingParameters, EmbeddingParams } from "@/components/EmbeddingPara
 import { FileManager } from "@/components/FileManager";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { loadDocumentsFromPublic } from "@/utils/documentLoader";
 
 const Index = () => {
   const [files, setFiles] = useState<FileData[]>([]);
@@ -27,34 +28,40 @@ const Index = () => {
   });
 
   useEffect(() => {
-    // Load documents from the database
+    // Load documents from the public/documents folder and database
     const loadDocuments = async () => {
       try {
-        const { data: documents, error } = await supabase
-          .from('documents')
-          .select('*')
-          .order('created_at', { ascending: false });
+        // First, try to load from the public documents folder
+        const documentFiles = await loadDocumentsFromPublic();
+        setFiles(documentFiles);
+        
+        // If no files were loaded from public folder, check database
+        if (documentFiles.length === 0) {
+          const { data: documents, error } = await supabase
+            .from('documents')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error('Error loading documents:', error);
-          setFiles([]);
-          return;
-        }
+          if (error) {
+            console.error('Error loading documents:', error);
+            setFiles([]);
+            return;
+          }
 
-        if (documents && documents.length > 0) {
-          const fileData: FileData[] = documents.map((doc) => ({
-            id: doc.id,
-            name: doc.name,
-            size: doc.size,
-            type: doc.type,
-            lastModified: new Date(doc.updated_at),
-            content: doc.content || `Content from ${doc.name}`
-          }));
+          if (documents && documents.length > 0) {
+            const fileData: FileData[] = documents.map((doc) => ({
+              id: doc.id,
+              name: doc.name,
+              size: doc.size,
+              type: doc.type,
+              lastModified: new Date(doc.updated_at),
+              content: doc.content || `Content from ${doc.name}`
+            }));
 
-          setFiles(fileData);
-        } else {
-          // No documents found - just set empty array
-          setFiles([]);
+            setFiles(fileData);
+          } else {
+            setFiles([]);
+          }
         }
       } catch (error) {
         console.error('Error loading documents:', error);
