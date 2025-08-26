@@ -4,6 +4,7 @@ import { ChatInterface } from "@/components/ChatInterface";
 import { RAGParameters, RAGParams } from "@/components/RAGParameters";
 import { EmbeddingParameters, EmbeddingParams } from "@/components/EmbeddingParameters";
 import { FileManager } from "@/components/FileManager";
+import { ChunkStatusDisplay } from "@/components/ChunkStatusDisplay";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { loadDocumentsFromPublic } from "@/utils/documentLoader";
@@ -109,6 +110,8 @@ const Index = () => {
           isCollapsed={isRagCollapsed}
           onToggleCollapse={() => setIsRagCollapsed(!isRagCollapsed)}
         />
+        
+        {!isRagCollapsed && <ChunkStatusDisplay />}
       </div>
 
       {/* Separator */}
