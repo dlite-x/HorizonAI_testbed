@@ -98,7 +98,7 @@ const Index = () => {
       <div className="w-1 bg-gradient-to-b from-primary/20 via-border to-primary/20 shadow-sm"></div>
 
       {/* Right Column - File Manager + Embedding Parameters */}
-      <div className="w-[400px] border-l border-border bg-card flex-shrink-0 shadow-medium relative z-10 flex flex-col">
+      <div className="flex-1 border-l border-border bg-card flex-shrink-0 shadow-medium relative z-10 flex flex-col">
         <div className="flex-1">
           <FileManager
             files={files}

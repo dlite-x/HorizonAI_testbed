@@ -87,85 +87,88 @@ export const FileManager = ({ files, selectedFile, onFileSelect, onFilesAdded }:
         </p>
       </div>
 
-      {/* File List */}
-      <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full">
-          <div className="p-4 space-y-2">
-            {files.map((file) => (
-              <Card
-                key={file.id}
-                className={`p-3 cursor-pointer transition-all duration-200 border-border hover:bg-muted/50 hover:border-primary/50 ${
-                  selectedFile?.id === file.id 
-                    ? 'bg-primary/10 border-primary ring-1 ring-primary/50' 
-                    : 'bg-card'
-                }`}
-                onClick={() => onFileSelect(file)}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="mt-1 text-primary">
-                    {getFileIcon(file.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium text-sm text-foreground break-words leading-tight">
-                        {file.name}
-                      </h3>
-                      {uploadedFiles.includes(file.id) && (
-                        <Badge variant="outline" className="text-xs">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          New
-                        </Badge>
-                      )}
+      {/* File List and Drag & Drop Side by Side */}
+      <div className="flex-1 overflow-hidden flex">
+        {/* File List */}
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="p-4 space-y-2">
+              {files.map((file) => (
+                <Card
+                  key={file.id}
+                  className={`p-3 cursor-pointer transition-all duration-200 border-border hover:bg-muted/50 hover:border-primary/50 ${
+                    selectedFile?.id === file.id 
+                      ? 'bg-primary/10 border-primary ring-1 ring-primary/50' 
+                      : 'bg-card'
+                  }`}
+                  onClick={() => onFileSelect(file)}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1 text-primary">
+                      {getFileIcon(file.type)}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        {formatFileSize(file.size)}
-                      </span>
-                      {uploadedFiles.includes(file.id) && (
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="text-xs h-6"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEmbedFile(file.id);
-                          }}
-                        >
-                          Embed
-                        </Button>
-                      )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-medium text-sm text-foreground break-words leading-tight">
+                          {file.name}
+                        </h3>
+                        {uploadedFiles.includes(file.id) && (
+                          <Badge variant="outline" className="text-xs">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            New
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">
+                          {formatFileSize(file.size)}
+                        </span>
+                        {uploadedFiles.includes(file.id) && (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-xs h-6"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEmbedFile(file.id);
+                            }}
+                          >
+                            Embed
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </ScrollArea>
-      </div>
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
 
-      {/* Drag & Drop Zone */}
-      <div className="p-4 border-t border-border bg-card">
-        <div
-          className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-            isDragOver 
-              ? 'border-primary bg-primary/5' 
-              : 'border-muted-foreground/25 hover:border-primary/50'
-          }`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-        >
-          <Upload className={`w-8 h-8 mx-auto mb-2 ${isDragOver ? 'text-primary' : 'text-muted-foreground'}`} />
-          <p className="text-sm font-medium text-foreground mb-1">
-            {isDragOver ? 'Drop files here' : 'Drag & drop files'}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Supports PDF, TXT, and other document formats
-          </p>
-          <Button size="sm" variant="outline" className="mt-3">
-            <Plus className="w-3 h-3 mr-1" />
-            Browse Files
-          </Button>
+        {/* Compact Drag & Drop Zone */}
+        <div className="w-[160px] p-4 border-l border-border bg-card/50">
+          <div
+            className={`border-2 border-dashed rounded-lg p-3 text-center transition-colors h-full flex flex-col justify-center ${
+              isDragOver 
+                ? 'border-primary bg-primary/5' 
+                : 'border-muted-foreground/25 hover:border-primary/50'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <Upload className={`w-6 h-6 mx-auto mb-2 ${isDragOver ? 'text-primary' : 'text-muted-foreground'}`} />
+            <p className="text-xs font-medium text-foreground mb-1">
+              {isDragOver ? 'Drop here' : 'Drop files'}
+            </p>
+            <p className="text-xs text-muted-foreground mb-2">
+              PDF, TXT, etc.
+            </p>
+            <Button size="sm" variant="outline" className="text-xs h-6">
+              <Plus className="w-3 h-3 mr-1" />
+              Browse
+            </Button>
+          </div>
         </div>
       </div>
     </div>
