@@ -7,6 +7,8 @@ import { FileManager } from "@/components/FileManager";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { loadDocumentsFromPublic } from "@/utils/documentLoader";
+import { embedAllPendingDocuments } from "@/utils/embeddingUtils";
+import { toast } from "sonner";
 
 const Index = () => {
   const [files, setFiles] = useState<FileData[]>([]);
@@ -63,6 +65,11 @@ const Index = () => {
             setFiles([]);
           }
         }
+        
+        // After loading documents, trigger embedding for any pending ones
+        setTimeout(() => {
+          embedAllPendingDocuments();
+        }, 2000);
       } catch (error) {
         console.error('Error loading documents:', error);
         setFiles([]);
