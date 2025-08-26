@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { loadDocumentsFromPublic } from "@/utils/documentLoader";
 import { embedAllPendingDocuments } from "@/utils/embeddingUtils";
+import { clearAndReEmbedAllDocuments } from "@/utils/reEmbedUtils";
 import { toast } from "sonner";
 
 const Index = () => {
@@ -84,9 +85,12 @@ const Index = () => {
     setFiles(prev => [...prev, ...newFiles]);
   };
 
-  const handleReEmbed = () => {
+  const handleReEmbed = async () => {
     console.log('Re-embedding with new parameters:', embeddingParams);
-    // In a real app, this would trigger re-embedding of all documents
+    const success = await clearAndReEmbedAllDocuments(embeddingParams.chunkSize, embeddingParams.overlap);
+    if (success) {
+      toast.success('Re-embedding started with new parameters!');
+    }
   };
 
   return (
