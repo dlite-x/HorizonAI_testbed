@@ -5,6 +5,7 @@ import { RAGParameters, RAGParams } from "@/components/RAGParameters";
 import { EmbeddingParameters, EmbeddingParams } from "@/components/EmbeddingParameters";
 import { FileManager } from "@/components/FileManager";
 import { ChunkStatusDisplay } from "@/components/ChunkStatusDisplay";
+import { DiagnosticActions } from "@/components/DiagnosticActions";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { loadDocumentsFromPublic } from "@/utils/documentLoader";
@@ -115,7 +116,12 @@ const Index = () => {
           onToggleCollapse={() => setIsRagCollapsed(!isRagCollapsed)}
         />
         
-        {!isRagCollapsed && <ChunkStatusDisplay />}
+        {!isRagCollapsed && (
+          <>
+            <ChunkStatusDisplay />
+            <DiagnosticActions />
+          </>
+        )}
       </div>
 
       {/* Separator */}
