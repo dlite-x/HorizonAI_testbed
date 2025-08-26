@@ -68,8 +68,8 @@ const Index = () => {
 
   return (
     <div className="h-screen flex bg-background">
-      {/* Left Column - Chat Interface (30% smaller) */}
-      <div className="flex-[0.7] flex flex-col min-w-0 bg-chat-bg">
+      {/* Left Column - Chat Interface (40%) */}
+      <div className="flex-[0.4] flex flex-col min-w-0 bg-chat-bg">
         <ChatInterface
           selectedFile={selectedFile}
           files={files}
@@ -80,8 +80,8 @@ const Index = () => {
       {/* Separator */}
       <div className="w-1 bg-gradient-to-b from-primary/20 via-border to-primary/20 shadow-sm"></div>
 
-      {/* Middle Column - RAG Parameters Only */}
-      <div className="w-[320px] border-x border-border bg-card flex-shrink-0 shadow-medium relative z-10 flex flex-col">
+      {/* Middle Column - RAG Parameters Only (30%) */}
+      <div className="flex-[0.3] border-x border-border bg-card flex-shrink-0 shadow-medium relative z-10 flex flex-col">
         <div className="p-4">
           <h2 className="text-lg font-semibold text-foreground mb-4">RAG Parameters</h2>
         </div>
@@ -97,8 +97,8 @@ const Index = () => {
       {/* Separator */}
       <div className="w-1 bg-gradient-to-b from-primary/20 via-border to-primary/20 shadow-sm"></div>
 
-      {/* Right Column - File Manager + Embedding Parameters */}
-      <div className="flex-1 border-l border-border bg-card flex-shrink-0 shadow-medium relative z-10 flex flex-col">
+      {/* Right Column - File Manager + Embedding Parameters (30%) */}
+      <div className="flex-[0.3] border-l border-border bg-card flex-shrink-0 shadow-medium relative z-10 flex flex-col">
         <div className="flex-1">
           <FileManager
             files={files}
