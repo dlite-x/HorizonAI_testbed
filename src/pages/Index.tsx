@@ -3,47 +3,47 @@ import { FileExplorer, FileData } from "@/components/FileExplorer";
 import { ChatInterface } from "@/components/ChatInterface";
 import { Separator } from "@/components/ui/separator";
 
-// Mock data for demonstration
+// Documents from the documents folder
 const mockFiles: FileData[] = [
   {
     id: "1",
-    name: "AI Research Papers.pdf",
+    name: "AI_Research_Papers.md",
     size: 2457600,
-    type: "application/pdf",
+    type: "text/markdown",
     lastModified: new Date("2024-01-15"),
-    content: "Research findings on artificial intelligence..."
+    content: "Research findings on artificial intelligence and machine learning methodologies..."
   },
   {
     id: "2", 
-    name: "Machine Learning Guide.docx",
+    name: "Machine_Learning_Guide.md",
     size: 1843200,
-    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    type: "text/markdown",
     lastModified: new Date("2024-01-10"),
-    content: "Comprehensive guide to machine learning algorithms..."
+    content: "Comprehensive guide to machine learning algorithms and their practical applications..."
   },
   {
     id: "3",
-    name: "Data Science Handbook.txt",
+    name: "Data_Science_Handbook.md",
     size: 512000,
-    type: "text/plain", 
+    type: "text/markdown", 
     lastModified: new Date("2024-01-08"),
-    content: "Essential concepts in data science and analytics..."
+    content: "Essential concepts in data science and analytics for modern businesses..."
   },
   {
     id: "4",
-    name: "Neural Networks Overview.md",
+    name: "Neural_Networks_Overview.md",
     size: 328960,
     type: "text/markdown",
     lastModified: new Date("2024-01-05"),
-    content: "Deep dive into neural network architectures..."
+    content: "Deep dive into neural network architectures and their applications..."
   },
   {
     id: "5",
-    name: "Python Programming Best Practices.pdf", 
+    name: "Python_Programming_Best_Practices.md", 
     size: 1920000,
-    type: "application/pdf",
+    type: "text/markdown",
     lastModified: new Date("2024-01-03"),
-    content: "Best practices for writing clean Python code..."
+    content: "Best practices for writing clean, maintainable Python code..."
   }
 ];
 
