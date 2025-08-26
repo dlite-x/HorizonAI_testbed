@@ -29,7 +29,7 @@ export const DiagnosticActions = () => {
   };
 
   return (
-    <Card className="mt-4">
+    <Card className="m-4 border-border bg-card">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold flex items-center gap-2">
           <Trash2 className="w-4 h-4 text-destructive" />
