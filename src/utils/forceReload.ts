@@ -10,11 +10,11 @@ export async function forceFullReload() {
     const { error: chunksError } = await supabase
       .from('document_chunks')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+      .gte('created_at', '1970-01-01'); // Delete all records by using a condition that matches everything
     
     if (chunksError) {
       console.error("Error clearing chunks:", chunksError);
-      toast.error("Failed to clear document chunks");
+      toast.error(`Failed to clear document chunks: ${chunksError.message}`);
       return false;
     }
 
@@ -22,11 +22,11 @@ export async function forceFullReload() {
     const { error: docsError } = await supabase
       .from('documents')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+      .gte('created_at', '1970-01-01'); // Delete all records by using a condition that matches everything
     
     if (docsError) {
       console.error("Error clearing documents:", docsError);
-      toast.error("Failed to clear documents");
+      toast.error(`Failed to clear documents: ${docsError.message}`);
       return false;
     }
 
