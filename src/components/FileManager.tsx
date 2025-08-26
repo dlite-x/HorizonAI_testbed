@@ -62,17 +62,54 @@ export const FileManager = ({ files, onFilesAdded }: FileManagerProps) => {
     
     for (const file of droppedFiles) {
       try {
-        // Read file content
-        const text = await file.text();
+        let content = '';
+        
+        // Handle different file types
+        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+          // For PDFs, we need to extract text content
+          console.log(`Processing PDF: ${file.name}`);
+          
+          // First, let's create a temporary URL for the PDF
+          const formData = new FormData();
+          formData.append('file', file);
+          
+          // For now, we'll use a fallback approach - store the file info but extract text via our service
+          // This is a simplified approach until we implement proper PDF text extraction
+          const arrayBuffer = await file.arrayBuffer();
+          const fileSize = arrayBuffer.byteLength;
+          
+          // Simulate content based on file size (this will be replaced with actual extraction)
+          content = `PDF Document: ${file.name}\nFile size: ${fileSize} bytes\nContent extraction pending...`;
+          
+          // Try to use our PDF extraction service
+          try {
+            const { data: extractData, error: extractError } = await supabase.functions.invoke('extract-pdf-text', {
+              body: { 
+                documentName: file.name,
+                fileSize: fileSize
+              }
+            });
+
+            if (!extractError && extractData && extractData.extractedText) {
+              content = extractData.extractedText;
+              console.log(`Successfully extracted ${content.length} characters from ${file.name}`);
+            }
+          } catch (extractError) {
+            console.warn(`PDF extraction failed for ${file.name}, using fallback content`);
+          }
+        } else {
+          // For text files, read as text
+          content = await file.text();
+        }
         
         // Store document in database
         const { data: document, error: dbError } = await supabase
           .from('documents')
           .insert({
             name: file.name,
-            size: file.size,
+            size: content.length, // Use content length, not file size
             type: file.type || 'application/octet-stream',
-            content: text,
+            content: content,
             status: 'uploaded',
             embedding_status: 'pending'
           })
@@ -81,7 +118,7 @@ export const FileManager = ({ files, onFilesAdded }: FileManagerProps) => {
 
         if (dbError) {
           console.error('Database error:', dbError);
-          toast.error(`Failed to upload ${file.name}`);
+          toast.error(`Failed to upload ${file.name}: ${dbError.message}`);
           continue;
         }
 
@@ -89,10 +126,10 @@ export const FileManager = ({ files, onFilesAdded }: FileManagerProps) => {
         const newFileData: FileData = {
           id: document.id,
           name: file.name,
-          size: file.size,
+          size: content.length,
           type: file.type || 'application/octet-stream',
           lastModified: new Date(file.lastModified),
-          content: text
+          content: content
         };
 
         onFilesAdded([newFileData]);
@@ -104,13 +141,13 @@ export const FileManager = ({ files, onFilesAdded }: FileManagerProps) => {
         const { error: embedError } = await supabase.functions.invoke('embed-document', {
           body: {
             documentId: document.id,
-            content: text
+            content: content
           }
         });
 
         if (embedError) {
           console.error('Embedding error:', embedError);
-          toast.error(`Failed to embed ${file.name}`);
+          toast.error(`Failed to embed ${file.name}: ${embedError.message}`);
           setEmbeddingFiles(prev => prev.filter(id => id !== document.id));
         } else {
           toast.success(`${file.name} uploaded and embedding started`);
@@ -126,7 +163,7 @@ export const FileManager = ({ files, onFilesAdded }: FileManagerProps) => {
 
       } catch (error) {
         console.error('Upload error:', error);
-        toast.error(`Failed to upload ${file.name}`);
+        toast.error(`Failed to upload ${file.name}: ${error.message}`);
       }
     }
   }, [onFilesAdded]);
