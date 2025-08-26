@@ -5,6 +5,7 @@ import { RAGParameters, RAGParams } from "@/components/RAGParameters";
 import { EmbeddingParameters, EmbeddingParams } from "@/components/EmbeddingParameters";
 import { FileManager } from "@/components/FileManager";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [selectedFile, setSelectedFile] = useState<FileData | null>(null);
@@ -27,30 +28,78 @@ const Index = () => {
   });
 
   useEffect(() => {
-    // Load documents from the public/documents folder
+    // Load documents from the database
     const loadDocuments = async () => {
       try {
-        // Get list of files from the documents folder
-        const documentList = [
-          'Food compositions comprising methylococcus capsulatus protein isolate.pdf',
-          'Global potential of sustainable single-cell protein based on variable renewable electricity.pdf',
-          'Photovoltaic-driven microbial protein production can use land and sunlight more efficiently than conventional crops.pdf',
-          'Single Cell Protein—State-of-the-Art, Industrial Landscape and Patents.pdf'
-        ];
+        const { data: documents, error } = await supabase
+          .from('documents')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-        const fileData: FileData[] = documentList.map((filename, index) => ({
-          id: (index + 1).toString(),
-          name: filename,
-          size: Math.floor(Math.random() * 5000000) + 500000, // Random size for demo
-          type: filename.endsWith('.pdf') ? 'application/pdf' : 'text/plain',
-          lastModified: new Date(),
-          content: `Content from ${filename}` // Placeholder content
-        }));
+        if (error) {
+          console.error('Error loading documents:', error);
+          setFiles([]);
+          return;
+        }
 
-        setFiles(fileData);
+        if (documents && documents.length > 0) {
+          const fileData: FileData[] = documents.map((doc) => ({
+            id: doc.id,
+            name: doc.name,
+            size: doc.size,
+            type: doc.type,
+            lastModified: new Date(doc.updated_at),
+            content: doc.content || `Content from ${doc.name}`
+          }));
+
+          setFiles(fileData);
+        } else {
+          // If no documents in database, create some sample data with proper UUIDs
+          const sampleDocs = [
+            {
+              name: 'Food compositions comprising methylococcus capsulatus protein isolate.pdf',
+              size: 2500000,
+              type: 'application/pdf',
+              content: 'This document discusses food compositions and protein isolates from methylococcus capsulatus, covering regulatory approvals, nutritional profiles, and commercial applications.'
+            },
+            {
+              name: 'Global potential of sustainable single-cell protein.pdf', 
+              size: 3200000,
+              type: 'application/pdf',
+              content: 'Research on the global potential of sustainable single-cell protein production using renewable electricity, covering scalability and environmental impact.'
+            }
+          ];
+
+          // Insert sample documents into database
+          for (const doc of sampleDocs) {
+            const { data: insertedDoc, error: insertError } = await supabase
+              .from('documents')
+              .insert({
+                name: doc.name,
+                size: doc.size,
+                type: doc.type,
+                content: doc.content,
+                status: 'uploaded',
+                embedding_status: 'pending'
+              })
+              .select()
+              .single();
+
+            if (!insertError && insertedDoc) {
+              const fileData: FileData = {
+                id: insertedDoc.id,
+                name: insertedDoc.name,
+                size: insertedDoc.size,
+                type: insertedDoc.type,
+                lastModified: new Date(insertedDoc.created_at),
+                content: insertedDoc.content || doc.content
+              };
+              setFiles(prev => [...prev, fileData]);
+            }
+          }
+        }
       } catch (error) {
         console.error('Error loading documents:', error);
-        // Fallback to empty array if loading fails
         setFiles([]);
       }
     };
