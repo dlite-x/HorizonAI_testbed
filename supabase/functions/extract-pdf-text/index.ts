@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { extract } from "https://deno.land/x/pdfparser@v2.0.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,39 +40,49 @@ serve(async (req) => {
       const pdfBuffer = await pdfResponse.arrayBuffer();
       console.log(`PDF fetched, size: ${pdfBuffer.byteLength} bytes`);
       
-      // For now, we'll simulate text extraction by generating realistic content
-      // This is a placeholder until we implement actual PDF parsing
-      const fileSize = pdfBuffer.byteLength;
-      
-      // Generate realistic content based on the document name
-      let extractedText = getDocumentContent(documentName);
-      
-      // Add some realistic variation without massive repetition
-      extractedText += '\n\nMethodology Section:\n';
-      extractedText += 'This research employs comprehensive analytical methods including statistical analysis, experimental design, data collection protocols, and validation procedures. ';
-      extractedText += 'The study methodology incorporates both quantitative and qualitative approaches to ensure robust findings and reliable conclusions.\n\n';
-      
-      extractedText += 'Results and Analysis:\n';
-      extractedText += 'The experimental results demonstrate significant findings with statistical significance. Detailed analysis reveals important patterns and correlations that contribute to the understanding of the research domain. ';
-      extractedText += 'Data interpretation follows established protocols and best practices in the field.\n\n';
-      
-      extractedText += 'Discussion and Conclusions:\n';
-      extractedText += 'The findings have important implications for future research and practical applications. This study contributes valuable insights to the existing knowledge base and opens new avenues for investigation. ';
-      extractedText += 'Recommendations for future work and practical implementation are provided based on the research outcomes.';
-      
-      console.log(`Generated text content: ${extractedText.length} characters`);
-      
-      return new Response(
-        JSON.stringify({ 
-          extractedText: extractedText,
-          fileSize: fileSize,
-          textLength: extractedText.length
-        }),
-        { 
-          status: 200, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      // Extract text from the PDF
+      try {
+        console.log("Starting PDF text extraction...");
+        const extractedText = await extract(new Uint8Array(pdfBuffer));
+        
+        if (!extractedText || extractedText.trim().length < 100) {
+          throw new Error("No meaningful text extracted from PDF");
         }
-      );
+        
+        console.log(`Successfully extracted ${extractedText.length} characters from PDF`);
+        
+        return new Response(
+          JSON.stringify({ 
+            extractedText: extractedText.trim(),
+            fileSize: pdfBuffer.byteLength,
+            textLength: extractedText.trim().length
+          }),
+          { 
+            status: 200, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+        
+      } catch (pdfParseError) {
+        console.error(`PDF parsing failed: ${pdfParseError.message}`);
+        
+        // Fallback to placeholder content if PDF parsing fails
+        const fallbackText = getDocumentContent(documentName);
+        console.log(`Using fallback content: ${fallbackText.length} characters`);
+        
+        return new Response(
+          JSON.stringify({ 
+            extractedText: fallbackText,
+            fileSize: pdfBuffer.byteLength,
+            textLength: fallbackText.length,
+            warning: "PDF parsing failed, using placeholder content"
+          }),
+          { 
+            status: 200, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
       
     } catch (fetchError) {
       console.error(`Error fetching PDF ${documentName}:`, fetchError);
