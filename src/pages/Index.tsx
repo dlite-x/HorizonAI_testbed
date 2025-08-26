@@ -5,8 +5,8 @@ import { RAGParameters, RAGParams } from "@/components/RAGParameters";
 import { EmbeddingParameters, EmbeddingParams } from "@/components/EmbeddingParameters";
 import { FileManager } from "@/components/FileManager";
 import { ChunkStatusDisplay } from "@/components/ChunkStatusDisplay";
+import { PipelineDiagnostics } from "@/components/PipelineDiagnostics";
 import { DiagnosticActions } from "@/components/DiagnosticActions";
-import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { loadDocumentsFromPublic } from "@/utils/documentLoader";
 import { embedAllPendingDocuments } from "@/utils/embeddingUtils";
@@ -100,12 +100,20 @@ const Index = () => {
 
   return (
     <div className="h-screen flex bg-background">
-      {/* Left Column - Chat Interface (expandable) */}
+      {/* Left Column - Chat Interface + Pipeline Diagnostics */}
       <div className={`${isRagCollapsed ? 'flex-[0.7]' : 'flex-[0.4]'} flex flex-col min-w-0 bg-chat-bg transition-all duration-300`}>
-        <ChatInterface
-          files={files}
-          ragParams={ragParams}
-        />
+        {/* Chat Interface - Top Half */}
+        <div className="flex-1 min-h-0">
+          <ChatInterface
+            files={files}
+            ragParams={ragParams}
+          />
+        </div>
+        
+        {/* Pipeline Diagnostics - Bottom Half */}
+        <div className="h-80 border-t border-border bg-card">
+          <PipelineDiagnostics />
+        </div>
       </div>
 
       {/* Separator */}
