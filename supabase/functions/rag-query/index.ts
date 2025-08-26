@@ -65,7 +65,7 @@ serve(async (req) => {
       .from('document_chunks')
       .select(`
         *,
-        documents (
+        documents!inner (
           id,
           name,
           type
@@ -96,10 +96,17 @@ serve(async (req) => {
     console.log(`Found ${chunks.length} chunks to search`);
 
     // Calculate similarities and get top results
-    const similarities = chunks.map(chunk => ({
-      ...chunk,
-      similarity: cosineSimilarity(queryEmbedding, chunk.embedding)
-    }));
+    const similarities = chunks.map(chunk => {
+      if (!chunk.embedding || !Array.isArray(chunk.embedding)) {
+        console.warn(`Invalid embedding for chunk ${chunk.id}`);
+        return null;
+      }
+      
+      return {
+        ...chunk,
+        similarity: cosineSimilarity(queryEmbedding, chunk.embedding)
+      };
+    }).filter(Boolean); // Remove null entries
 
     // Sort by similarity and take top K
     const topResults = similarities
@@ -111,7 +118,7 @@ serve(async (req) => {
 
     // Create context from top results
     const context = topResults
-      .map(result => `[${result.documents.name}] ${result.content}`)
+      .map(result => `[${result.documents?.name || 'Unknown'}] ${result.content}`)
       .join('\n\n');
 
     // Generate response using OpenAI
@@ -149,8 +156,8 @@ serve(async (req) => {
 
     // Format sources
     const sources = topResults.map(result => ({
-      document: result.documents.name,
-      type: result.documents.type,
+      document: result.documents?.name || 'Unknown',
+      type: result.documents?.type || 'unknown',
       similarity: result.similarity,
       excerpt: result.content.substring(0, 200) + '...'
     }));
