@@ -10,7 +10,8 @@ import {
   User, 
   FileText, 
   Sparkles,
-  MessageSquare
+  MessageSquare,
+  Flag
 } from "lucide-react";
 import { FileData } from "./FileExplorer";
 
@@ -20,6 +21,7 @@ interface ChatMessage {
   content: string;
   timestamp: Date;
   sources?: string[];
+  flagged?: boolean;
 }
 
 interface ChatInterfaceProps {
@@ -34,7 +36,8 @@ export const ChatInterface = ({ selectedFile, files }: ChatInterfaceProps) => {
       type: 'ai',
       content: 'Hello! I\'m your AI assistant. I can help you analyze and answer questions about your documents. Upload some files and ask me anything!',
       timestamp: new Date(),
-      sources: []
+      sources: [],
+      flagged: false
     }
   ]);
   const [inputMessage, setInputMessage] = useState("");
@@ -67,7 +70,8 @@ export const ChatInterface = ({ selectedFile, files }: ChatInterfaceProps) => {
       type: 'ai',
       content: responses[Math.floor(Math.random() * responses.length)],
       timestamp: new Date(),
-      sources: relevantFiles.map(f => f.name)
+      sources: relevantFiles.map(f => f.name),
+      flagged: false
     };
   };
 
@@ -98,6 +102,14 @@ export const ChatInterface = ({ selectedFile, files }: ChatInterfaceProps) => {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleFlagResponse = (messageId: string) => {
+    setMessages(prev => prev.map(msg => 
+      msg.id === messageId 
+        ? { ...msg, flagged: !msg.flagged }
+        : msg
+    ));
   };
 
   return (
@@ -173,8 +185,25 @@ export const ChatInterface = ({ selectedFile, files }: ChatInterfaceProps) => {
                     )}
                   </Card>
                   
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {message.timestamp.toLocaleTimeString()}
+                  <div className="mt-1 flex items-center justify-between">
+                    <div className="text-xs text-muted-foreground">
+                      {message.timestamp.toLocaleTimeString()}
+                    </div>
+                    {message.type === 'ai' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleFlagResponse(message.id)}
+                        className={`h-6 px-2 text-xs ${
+                          message.flagged 
+                            ? 'text-destructive hover:text-destructive' 
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        <Flag className={`w-3 h-3 mr-1 ${message.flagged ? 'fill-current' : ''}`} />
+                        {message.flagged ? 'Flagged' : 'Flag'}
+                      </Button>
+                    )}
                   </div>
                 </div>
 
