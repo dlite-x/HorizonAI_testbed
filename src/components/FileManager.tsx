@@ -20,8 +20,6 @@ import { toast } from "sonner";
 
 interface FileManagerProps {
   files: FileData[];
-  selectedFile: FileData | null;
-  onFileSelect: (file: FileData) => void;
   onFilesAdded: (files: FileData[]) => void;
 }
 
@@ -40,7 +38,7 @@ const getFileIcon = (type: string) => {
   return <File className="w-4 h-4" />;
 };
 
-export const FileManager = ({ files, selectedFile, onFileSelect, onFilesAdded }: FileManagerProps) => {
+export const FileManager = ({ files, onFilesAdded }: FileManagerProps) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [embeddedFiles, setEmbeddedFiles] = useState<string[]>([]);
@@ -190,12 +188,7 @@ export const FileManager = ({ files, selectedFile, onFileSelect, onFilesAdded }:
             {files.map((file) => (
               <Card
                 key={file.id}
-                className={`p-2.5 cursor-pointer transition-all duration-200 border-border hover:bg-muted/50 hover:border-primary/50 ${
-                  selectedFile?.id === file.id 
-                    ? 'bg-primary/10 border-primary ring-1 ring-primary/50' 
-                    : 'bg-card'
-                }`}
-                onClick={() => onFileSelect(file)}
+                className="p-2.5 transition-all duration-200 border-border hover:bg-muted/50 bg-card"
               >
                 <div className="flex items-start gap-2.5">
                   <div className="mt-0.5 text-primary">

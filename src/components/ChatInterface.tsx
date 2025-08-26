@@ -28,12 +28,11 @@ interface ChatMessage {
 }
 
 interface ChatInterfaceProps {
-  selectedFile: FileData | null;
   files: FileData[];
   ragParams: RAGParams;
 }
 
-export const ChatInterface = ({ selectedFile, files, ragParams }: ChatInterfaceProps) => {
+export const ChatInterface = ({ files, ragParams }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -70,8 +69,8 @@ export const ChatInterface = ({ selectedFile, files, ragParams }: ChatInterfaceP
         };
       }
 
-      // Get selected document IDs for context  
-      const documentIds = selectedFile ? [selectedFile.id] : files.map(f => f.id);
+      // Get all document IDs for context  
+      const documentIds = files.map(f => f.id);
       
       // Validate that all IDs are proper UUIDs
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -134,7 +133,7 @@ export const ChatInterface = ({ selectedFile, files, ragParams }: ChatInterfaceP
         flagged: false
       };
     }
-  }, [selectedFile, files, ragParams.topK]);
+  }, [files, ragParams.topK]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -303,15 +302,6 @@ export const ChatInterface = ({ selectedFile, files, ragParams }: ChatInterfaceP
 
       {/* Input */}
       <div className="p-4 border-t border-border bg-card">
-        {selectedFile && (
-          <div className="mb-3">
-            <Badge variant="outline" className="text-xs">
-              <MessageSquare className="w-3 h-3 mr-1" />
-              Context: {selectedFile.name}
-            </Badge>
-          </div>
-        )}
-        
         <div className="flex gap-2">
           <Input
             value={inputMessage}

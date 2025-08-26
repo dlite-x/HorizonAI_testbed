@@ -8,7 +8,6 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
-  const [selectedFile, setSelectedFile] = useState<FileData | null>(null);
   const [files, setFiles] = useState<FileData[]>([]);
   const [isRagCollapsed, setIsRagCollapsed] = useState(false);
   const [ragParams, setRagParams] = useState<RAGParams>({
@@ -80,7 +79,6 @@ const Index = () => {
       {/* Left Column - Chat Interface (expandable) */}
       <div className={`${isRagCollapsed ? 'flex-[0.7]' : 'flex-[0.4]'} flex flex-col min-w-0 bg-chat-bg transition-all duration-300`}>
         <ChatInterface
-          selectedFile={selectedFile}
           files={files}
           ragParams={ragParams}
         />
@@ -107,8 +105,6 @@ const Index = () => {
         <div className="flex-1">
           <FileManager
             files={files}
-            selectedFile={selectedFile}
-            onFileSelect={setSelectedFile}
             onFilesAdded={handleFilesAdded}
           />
         </div>
