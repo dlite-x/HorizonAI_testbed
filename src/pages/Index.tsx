@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 const Index = () => {
   const [selectedFile, setSelectedFile] = useState<FileData | null>(null);
   const [files, setFiles] = useState<FileData[]>([]);
+  const [isRagCollapsed, setIsRagCollapsed] = useState(false);
   const [ragParams, setRagParams] = useState<RAGParams>({
     temperature: 0.7,
     topK: 3,
@@ -68,8 +69,8 @@ const Index = () => {
 
   return (
     <div className="h-screen flex bg-background">
-      {/* Left Column - Chat Interface (40%) */}
-      <div className="flex-[0.4] flex flex-col min-w-0 bg-chat-bg">
+      {/* Left Column - Chat Interface (expandable) */}
+      <div className={`${isRagCollapsed ? 'flex-[0.7]' : 'flex-[0.4]'} flex flex-col min-w-0 bg-chat-bg transition-all duration-300`}>
         <ChatInterface
           selectedFile={selectedFile}
           files={files}
@@ -80,18 +81,14 @@ const Index = () => {
       {/* Separator */}
       <div className="w-1 bg-gradient-to-b from-primary/20 via-border to-primary/20 shadow-sm"></div>
 
-      {/* Middle Column - RAG Parameters Only (30%) */}
-      <div className="flex-[0.3] border-x border-border bg-card flex-shrink-0 shadow-medium relative z-10 flex flex-col">
-        <div className="p-4">
-          <h2 className="text-lg font-semibold text-foreground mb-4">RAG Parameters</h2>
-        </div>
-        
-        <div className="flex-1 overflow-y-auto p-4">
-          <RAGParameters
-            params={ragParams}
-            onParamsChange={setRagParams}
-          />
-        </div>
+      {/* Middle Column - RAG Parameters (collapsible) */}
+      <div className={`${isRagCollapsed ? 'w-12' : 'flex-[0.3]'} border-x border-border bg-card flex-shrink-0 shadow-medium relative z-10 flex flex-col transition-all duration-300 overflow-hidden`}>
+        <RAGParameters
+          params={ragParams}
+          onParamsChange={setRagParams}
+          isCollapsed={isRagCollapsed}
+          onToggleCollapse={() => setIsRagCollapsed(!isRagCollapsed)}
+        />
       </div>
 
       {/* Separator */}
