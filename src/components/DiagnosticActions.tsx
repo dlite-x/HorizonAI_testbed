@@ -59,7 +59,7 @@ export const DiagnosticActions = () => {
           {isReloading ? 'Clearing...' : 'Clear All Data'}
         </Button>
         <p className="text-xs text-muted-foreground mt-2">
-          Database cleared. Upload PDF documents via the drag & drop file manager above.
+          Clears all documents, chunks, and vectors from the database. Page will reload to reset UI state.
         </p>
       </CardContent>
     </Card>

@@ -6,7 +6,7 @@ export async function forceFullReload() {
     console.log("Starting force reload - clearing all data...");
     toast.info("Clearing all documents and chunks...");
 
-    // Clear all existing documents and chunks
+    // Clear all existing document chunks first (due to foreign key constraints)
     const { error: chunksError } = await supabase
       .from('document_chunks')
       .delete()
@@ -18,6 +18,7 @@ export async function forceFullReload() {
       return false;
     }
 
+    // Clear all existing documents
     const { error: docsError } = await supabase
       .from('documents')
       .delete()
@@ -30,7 +31,12 @@ export async function forceFullReload() {
     }
 
     console.log("All documents and chunks cleared successfully");
-    toast.success("All sample content removed. You can now upload real documents.");
+    toast.success("All data cleared successfully. Ready for new document uploads.");
+    
+    // Trigger a page reload to reset all UI state
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
     
     return true;
 
