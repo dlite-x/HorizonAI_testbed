@@ -69,7 +69,7 @@ const Index = () => {
         
         // After loading documents, trigger embedding for any pending ones
         setTimeout(() => {
-          embedAllPendingDocuments();
+          embedAllPendingDocuments(embeddingParams.chunkSize, embeddingParams.overlap);
         }, 2000);
       } catch (error) {
         console.error('Error loading documents:', error);

@@ -1,12 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export async function triggerEmbedding(documentId: string, content: string) {
+export async function triggerEmbedding(documentId: string, content: string, chunkSize: number = 512, overlap: number = 50) {
   try {
     const { data, error } = await supabase.functions.invoke('embed-document', {
       body: {
         documentId,
-        content
+        content,
+        chunkSize,
+        overlap
       }
     });
 
@@ -22,7 +24,7 @@ export async function triggerEmbedding(documentId: string, content: string) {
   }
 }
 
-export async function embedAllPendingDocuments() {
+export async function embedAllPendingDocuments(chunkSize: number = 512, overlap: number = 50) {
   try {
     // Get all pending documents
     const { data: pendingDocs, error } = await supabase
@@ -50,7 +52,7 @@ export async function embedAllPendingDocuments() {
       }
 
       console.log(`Embedding document: ${doc.name}`);
-      const result = await triggerEmbedding(doc.id, doc.content);
+      const result = await triggerEmbedding(doc.id, doc.content, chunkSize, overlap);
       
       if (result.success) {
         toast.success(`Started embedding: ${doc.name}`);

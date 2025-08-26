@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { documentId, content } = await req.json();
+    const { documentId, content, chunkSize = 512, overlap = 50 } = await req.json();
     
     if (!documentId || !content) {
       throw new Error('Document ID and content are required');
@@ -38,11 +38,28 @@ serve(async (req) => {
       .update({ embedding_status: 'processing' })
       .eq('id', documentId);
 
-    // Split content into chunks (simple approach for now)
-    const chunkSize = 1000;
+    // Split content into chunks with overlap
     const chunks = [];
-    for (let i = 0; i < content.length; i += chunkSize) {
-      chunks.push(content.slice(i, i + chunkSize));
+    
+    // Clean content - remove extra whitespace and normalize
+    const cleanContent = content.replace(/\s+/g, ' ').trim();
+    
+    if (cleanContent.length <= chunkSize) {
+      // If content is smaller than chunk size, use as single chunk
+      chunks.push(cleanContent);
+    } else {
+      // Split into overlapping chunks
+      for (let i = 0; i < cleanContent.length; i += chunkSize - overlap) {
+        const end = Math.min(i + chunkSize, cleanContent.length);
+        const chunk = cleanContent.slice(i, end).trim();
+        
+        if (chunk.length > 0) {
+          chunks.push(chunk);
+        }
+        
+        // If we've reached the end, break
+        if (end >= cleanContent.length) break;
+      }
     }
 
     console.log(`Split document into ${chunks.length} chunks`);
