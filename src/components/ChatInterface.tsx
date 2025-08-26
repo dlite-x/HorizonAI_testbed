@@ -109,9 +109,9 @@ export const ChatInterface = ({ selectedFile, files }: ChatInterfaceProps) => {
             <Bot className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-foreground">AI Document Assistant</h2>
+            <h2 className="text-lg font-semibold text-foreground">Horizon HubAssist</h2>
             <p className="text-sm text-muted-foreground">
-              Powered by RAG • {files.length} documents indexed
+              AI Document Assistant • {files.length} documents indexed
             </p>
           </div>
           <div className="ml-auto">

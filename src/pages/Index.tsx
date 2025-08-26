@@ -53,7 +53,7 @@ const Index = () => {
   return (
     <div className="h-screen flex bg-background">
       {/* File Explorer Panel */}
-      <div className="w-96 border-r border-border bg-explorer-bg flex-shrink-0">
+      <div className="w-96 border-r-2 border-border bg-explorer-bg flex-shrink-0 shadow-medium relative z-10">
         <FileExplorer
           files={mockFiles}
           selectedFile={selectedFile}
@@ -61,10 +61,11 @@ const Index = () => {
         />
       </div>
 
-      <Separator orientation="vertical" className="bg-border" />
+      {/* Vertical Separator with Enhanced Visual */}
+      <div className="w-1 bg-gradient-to-b from-primary/20 via-border to-primary/20 shadow-sm"></div>
 
       {/* Chat Interface */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 bg-chat-bg">
         <ChatInterface
           selectedFile={selectedFile}
           files={mockFiles}
