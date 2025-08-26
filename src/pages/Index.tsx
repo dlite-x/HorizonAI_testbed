@@ -53,7 +53,7 @@ const Index = () => {
   return (
     <div className="h-screen flex bg-background">
       {/* File Explorer Panel */}
-      <div className="w-[480px] border-r-2 border-border bg-explorer-bg flex-shrink-0 shadow-medium relative z-10">
+      <div className="w-[560px] border-r-2 border-border bg-explorer-bg flex-shrink-0 shadow-medium relative z-10">
         <FileExplorer
           files={mockFiles}
           selectedFile={selectedFile}
