@@ -114,6 +114,14 @@ export const ChatInterface = ({ selectedFile, files, ragParams }: ChatInterfaceP
     const generateContextualResponse = (query: string, sources: string[]) => {
       const lowerQuery = query.toLowerCase();
       
+      // Methane and microbe questions - HIGH PRIORITY
+      if (lowerQuery.includes('microbe') || lowerQuery.includes('methane') || lowerQuery.includes('methanotroph') || 
+          lowerQuery.includes('bacteria') || lowerQuery.includes('organism')) {
+        if (sources.length > 0) {
+          return "Based on the single-cell protein research, the primary microbes used in methane fermentation include: **Methylococcus capsulatus** (Bath strain) - the most commercialized methanotroph for protein production, capable of converting methane to high-quality biomass with 65-80% protein content. **Methylomonas** species - efficient methane converters with rapid growth rates and excellent amino acid profiles. **Methylobacter** species - known for robust growth on methane with high conversion efficiency. These methanotrophic bacteria are obligate methane consumers that represent the foundation of industrial gas fermentation for sustainable protein production.";
+        }
+      }
+      
       // Cost and economic questions
       if (lowerQuery.includes('cost') || lowerQuery.includes('economic') || lowerQuery.includes('driver')) {
         if (sources.some(s => s.toLowerCase().includes('industrial') || s.toLowerCase().includes('patent'))) {
