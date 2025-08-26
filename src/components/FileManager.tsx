@@ -10,7 +10,9 @@ import {
   File,
   Plus,
   HardDrive,
-  CheckCircle
+  CheckCircle,
+  Loader2,
+  Database
 } from "lucide-react";
 import { FileData } from "@/components/FileExplorer";
 
@@ -39,6 +41,8 @@ const getFileIcon = (type: string) => {
 export const FileManager = ({ files, selectedFile, onFileSelect, onFilesAdded }: FileManagerProps) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const [embeddedFiles, setEmbeddedFiles] = useState<string[]>([]);
+  const [embeddingFiles, setEmbeddingFiles] = useState<string[]>([]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -68,10 +72,19 @@ export const FileManager = ({ files, selectedFile, onFileSelect, onFilesAdded }:
     setUploadedFiles(prev => [...prev, ...newFileData.map(f => f.id)]);
   }, [onFilesAdded]);
 
-  const handleEmbedFile = (fileId: string) => {
-    // Simulate embedding process
-    console.log(`Embedding file ${fileId}...`);
-    // In a real app, this would trigger the embedding process
+  const handleEmbedFile = async (fileId: string) => {
+    // Start embedding process
+    setEmbeddingFiles(prev => [...prev, fileId]);
+    
+    // Simulate embedding process with delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Complete embedding
+    setEmbeddingFiles(prev => prev.filter(id => id !== fileId));
+    setEmbeddedFiles(prev => [...prev, fileId]);
+    setUploadedFiles(prev => prev.filter(id => id !== fileId)); // Remove from "new" list
+    
+    console.log(`Successfully embedded file ${fileId}`);
   };
 
   return (
@@ -138,22 +151,36 @@ export const FileManager = ({ files, selectedFile, onFileSelect, onFilesAdded }:
                           New
                         </Badge>
                       )}
+                      {embeddedFiles.includes(file.id) && (
+                        <Badge variant="default" className="text-xs bg-green-500 hover:bg-green-600">
+                          <Database className="w-3 h-3 mr-1" />
+                          Embedded
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">
                         {formatFileSize(file.size)}
                       </span>
-                      {uploadedFiles.includes(file.id) && (
+                      {uploadedFiles.includes(file.id) && !embeddedFiles.includes(file.id) && (
                         <Button 
                           size="sm" 
                           variant="outline" 
                           className="text-xs h-5"
+                          disabled={embeddingFiles.includes(file.id)}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleEmbedFile(file.id);
                           }}
                         >
-                          Embed
+                          {embeddingFiles.includes(file.id) ? (
+                            <>
+                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              Embedding...
+                            </>
+                          ) : (
+                            'Embed'
+                          )}
                         </Button>
                       )}
                     </div>
