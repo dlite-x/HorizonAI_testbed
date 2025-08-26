@@ -210,19 +210,6 @@ export const RAGParameters = ({ params, onParamsChange, isCollapsed = false, onT
             </p>
           </div>
 
-          {/* Enable Reranking */}
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="text-sm font-medium">Enable Reranking</Label>
-              <p className="text-xs text-muted-foreground">
-                Reorder retrieved documents by relevance
-              </p>
-            </div>
-            <Switch
-              checked={params.enableReranking}
-              onCheckedChange={(checked) => updateParam('enableReranking', checked)}
-            />
-          </div>
 
           {/* Reset Button */}
           <div className="pt-2 border-t border-border/50">

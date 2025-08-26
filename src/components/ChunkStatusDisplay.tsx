@@ -145,11 +145,6 @@ export const ChunkStatusDisplay = () => {
           </div>
         )}
 
-        {stats.totalChunks > 0 && stats.embeddedDocuments === stats.totalDocuments && (
-          <div className="text-xs text-green-600 bg-green-50 p-2 rounded border">
-            ✅ All documents embedded and ready for queries
-          </div>
-        )}
       </CardContent>
     </Card>
   );
