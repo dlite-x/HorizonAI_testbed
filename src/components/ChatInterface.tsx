@@ -58,15 +58,42 @@ export const ChatInterface = ({ selectedFile, files, ragParams }: ChatInterfaceP
 
   const simulateAIResponse = useCallback(async (userMessage: string): Promise<ChatMessage> => {
     try {
-      // Get selected document IDs for context
+      // Check if there are any files
+      if (files.length === 0) {
+        return {
+          id: Date.now().toString(),
+          content: "Please upload some documents first. I need documents to analyze before I can answer questions about them.",
+          type: 'ai',
+          timestamp: new Date(),
+          sources: [],
+          flagged: false
+        };
+      }
+
+      // Get selected document IDs for context  
       const documentIds = selectedFile ? [selectedFile.id] : files.map(f => f.id);
+      
+      // Validate that all IDs are proper UUIDs
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      const validDocumentIds = documentIds.filter(id => uuidRegex.test(id));
+      
+      if (validDocumentIds.length === 0) {
+        return {
+          id: Date.now().toString(),
+          content: "No valid documents found. Please upload documents with the file manager to enable RAG queries.",
+          type: 'ai',
+          timestamp: new Date(),
+          sources: [],
+          flagged: false
+        };
+      }
       
       // Call the real RAG function
       const { data, error } = await supabase.functions.invoke('rag-query', {
         body: {
           query: userMessage,
           topK: ragParams.topK,
-          documentIds
+          documentIds: validDocumentIds
         }
       });
 
@@ -75,7 +102,7 @@ export const ChatInterface = ({ selectedFile, files, ragParams }: ChatInterfaceP
         toast.error('Error processing your question. Please try again.');
         return {
           id: Date.now().toString(),
-          content: "I'm sorry, I encountered an error while processing your question. Please try again or check if the documents have been properly embedded.",
+          content: "I'm sorry, I encountered an error while processing your question. Please make sure the documents have been properly embedded, or try uploading new documents.",
           type: 'ai',
           timestamp: new Date(),
           sources: [],

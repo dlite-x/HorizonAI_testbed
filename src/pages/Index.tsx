@@ -54,49 +54,8 @@ const Index = () => {
 
           setFiles(fileData);
         } else {
-          // If no documents in database, create some sample data with proper UUIDs
-          const sampleDocs = [
-            {
-              name: 'Food compositions comprising methylococcus capsulatus protein isolate.pdf',
-              size: 2500000,
-              type: 'application/pdf',
-              content: 'This document discusses food compositions and protein isolates from methylococcus capsulatus, covering regulatory approvals, nutritional profiles, and commercial applications.'
-            },
-            {
-              name: 'Global potential of sustainable single-cell protein.pdf', 
-              size: 3200000,
-              type: 'application/pdf',
-              content: 'Research on the global potential of sustainable single-cell protein production using renewable electricity, covering scalability and environmental impact.'
-            }
-          ];
-
-          // Insert sample documents into database
-          for (const doc of sampleDocs) {
-            const { data: insertedDoc, error: insertError } = await supabase
-              .from('documents')
-              .insert({
-                name: doc.name,
-                size: doc.size,
-                type: doc.type,
-                content: doc.content,
-                status: 'uploaded',
-                embedding_status: 'pending'
-              })
-              .select()
-              .single();
-
-            if (!insertError && insertedDoc) {
-              const fileData: FileData = {
-                id: insertedDoc.id,
-                name: insertedDoc.name,
-                size: insertedDoc.size,
-                type: insertedDoc.type,
-                lastModified: new Date(insertedDoc.created_at),
-                content: insertedDoc.content || doc.content
-              };
-              setFiles(prev => [...prev, fileData]);
-            }
-          }
+          // No documents found - just set empty array
+          setFiles([]);
         }
       } catch (error) {
         console.error('Error loading documents:', error);
