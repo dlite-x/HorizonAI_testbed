@@ -2,41 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* RAG Document Chat App Design System */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core Colors - Dark Theme */
+    --background: 217 33% 6%;
+    --foreground: 213 31% 91%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Cards & Surfaces */
+    --card: 217 33% 9%;
+    --card-foreground: 213 31% 91%;
+    --popover: 217 33% 9%;
+    --popover-foreground: 213 31% 91%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    /* File Explorer Colors */
+    --explorer-bg: 217 33% 4%;
+    --explorer-hover: 217 33% 12%;
+    --explorer-border: 217 19% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
+    /* Chat Interface */
+    --chat-bg: 217 33% 6%;
+    --chat-input: 217 33% 12%;
+    --chat-bubble-user: 262 83% 58%;
+    --chat-bubble-ai: 217 33% 15%;
+
+    /* Accent & Branding */
+    --primary: 262 83% 58%;
     --primary-foreground: 210 40% 98%;
+    --primary-glow: 262 100% 75%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217 33% 15%;
+    --secondary-foreground: 213 31% 91%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 284 100% 78%;
+    --accent-foreground: 217 33% 6%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Interactive States */
+    --muted: 217 33% 15%;
+    --muted-foreground: 217 9% 45%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 62% 51%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Borders & Inputs */
+    --border: 217 19% 15%;
+    --input: 217 33% 12%;
+    --ring: 262 83% 58%;
 
-    --radius: 0.5rem;
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(284 100% 78%));
+    --gradient-surface: linear-gradient(180deg, hsl(217 33% 9%), hsl(217 33% 6%));
+    --gradient-glow: linear-gradient(135deg, hsl(262 83% 58% / 0.3), hsl(284 100% 78% / 0.3));
+
+    /* Shadows */
+    --shadow-soft: 0 2px 8px hsl(217 33% 4% / 0.5);
+    --shadow-medium: 0 8px 32px hsl(217 33% 4% / 0.7);
+    --shadow-glow: 0 0 32px hsl(262 83% 58% / 0.3);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -92,6 +120,7 @@ All colors MUST be HSL.
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+  }
 }
 
 @layer base {
@@ -100,6 +129,49 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    background: var(--gradient-surface);
+  }
+}
+
+@layer components {
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground));
+    border-radius: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--accent));
+  }
+
+  /* Glow effect */
+  .glow-effect {
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Chat animations */
+  .message-enter {
+    animation: slideInUp 0.3s ease-out;
+  }
+
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
