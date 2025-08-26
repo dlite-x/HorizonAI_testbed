@@ -107,7 +107,7 @@ export const FileManager = ({ files, onFilesAdded }: FileManagerProps) => {
           .from('documents')
           .insert({
             name: file.name,
-            size: content.length, // Use content length, not file size
+            size: file.size, // Use actual file size, not content length
             type: file.type || 'application/octet-stream',
             content: content,
             status: 'uploaded',
@@ -126,7 +126,7 @@ export const FileManager = ({ files, onFilesAdded }: FileManagerProps) => {
         const newFileData: FileData = {
           id: document.id,
           name: file.name,
-          size: content.length,
+          size: file.size, // Use actual file size for UI
           type: file.type || 'application/octet-stream',
           lastModified: new Date(file.lastModified),
           content: content

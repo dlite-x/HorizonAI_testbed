@@ -39,24 +39,25 @@ serve(async (req) => {
       const pdfBuffer = await pdfResponse.arrayBuffer();
       console.log(`PDF fetched, size: ${pdfBuffer.byteLength} bytes`);
       
-      // For now, we'll simulate text extraction by generating content based on file size
+      // For now, we'll simulate text extraction by generating realistic content
       // This is a placeholder until we implement actual PDF parsing
       const fileSize = pdfBuffer.byteLength;
-      const estimatedTextLength = Math.floor(fileSize * 0.5); // Rough estimate
       
       // Generate realistic content based on the document name
-      let extractedText = '';
-      const baseContent = getDocumentContent(documentName);
+      let extractedText = getDocumentContent(documentName);
       
-      // Repeat and expand the base content to match expected file size
-      const repetitions = Math.max(1, Math.floor(estimatedTextLength / baseContent.length));
-      for (let i = 0; i < repetitions; i++) {
-        extractedText += baseContent + '\n\n';
-        extractedText += `Section ${i + 1}: Additional detailed content about the topics covered in this research paper. `;
-        extractedText += `This includes methodology, experimental design, results analysis, statistical data, `;
-        extractedText += `literature review, discussion of findings, implications for the field, and future research directions. `;
-        extractedText += `The document contains comprehensive information with figures, tables, references, and appendices. `;
-      }
+      // Add some realistic variation without massive repetition
+      extractedText += '\n\nMethodology Section:\n';
+      extractedText += 'This research employs comprehensive analytical methods including statistical analysis, experimental design, data collection protocols, and validation procedures. ';
+      extractedText += 'The study methodology incorporates both quantitative and qualitative approaches to ensure robust findings and reliable conclusions.\n\n';
+      
+      extractedText += 'Results and Analysis:\n';
+      extractedText += 'The experimental results demonstrate significant findings with statistical significance. Detailed analysis reveals important patterns and correlations that contribute to the understanding of the research domain. ';
+      extractedText += 'Data interpretation follows established protocols and best practices in the field.\n\n';
+      
+      extractedText += 'Discussion and Conclusions:\n';
+      extractedText += 'The findings have important implications for future research and practical applications. This study contributes valuable insights to the existing knowledge base and opens new avenues for investigation. ';
+      extractedText += 'Recommendations for future work and practical implementation are provided based on the research outcomes.';
       
       console.log(`Generated text content: ${extractedText.length} characters`);
       
