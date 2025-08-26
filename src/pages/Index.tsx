@@ -68,8 +68,8 @@ const Index = () => {
 
   return (
     <div className="h-screen flex bg-background">
-      {/* Left Column - Chat Interface */}
-      <div className="flex-1 flex flex-col min-w-0 bg-chat-bg">
+      {/* Left Column - Chat Interface (30% smaller) */}
+      <div className="flex-[0.7] flex flex-col min-w-0 bg-chat-bg">
         <ChatInterface
           selectedFile={selectedFile}
           files={files}
@@ -80,22 +80,16 @@ const Index = () => {
       {/* Separator */}
       <div className="w-1 bg-gradient-to-b from-primary/20 via-border to-primary/20 shadow-sm"></div>
 
-      {/* Middle Column - Parameters */}
+      {/* Middle Column - RAG Parameters Only */}
       <div className="w-[320px] border-x border-border bg-card flex-shrink-0 shadow-medium relative z-10 flex flex-col">
         <div className="p-4">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Parameters</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">RAG Parameters</h2>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4">
           <RAGParameters
             params={ragParams}
             onParamsChange={setRagParams}
-          />
-          
-          <EmbeddingParameters
-            params={embeddingParams}
-            onParamsChange={setEmbeddingParams}
-            onReEmbed={handleReEmbed}
           />
         </div>
       </div>
@@ -103,14 +97,25 @@ const Index = () => {
       {/* Separator */}
       <div className="w-1 bg-gradient-to-b from-primary/20 via-border to-primary/20 shadow-sm"></div>
 
-      {/* Right Column - File Manager */}
-      <div className="w-[400px] border-l border-border bg-card flex-shrink-0 shadow-medium relative z-10">
-        <FileManager
-          files={files}
-          selectedFile={selectedFile}
-          onFileSelect={setSelectedFile}
-          onFilesAdded={handleFilesAdded}
-        />
+      {/* Right Column - File Manager + Embedding Parameters */}
+      <div className="w-[400px] border-l border-border bg-card flex-shrink-0 shadow-medium relative z-10 flex flex-col">
+        <div className="flex-1">
+          <FileManager
+            files={files}
+            selectedFile={selectedFile}
+            onFileSelect={setSelectedFile}
+            onFilesAdded={handleFilesAdded}
+          />
+        </div>
+        
+        {/* Embedding Parameters */}
+        <div className="border-t border-border p-4">
+          <EmbeddingParameters
+            params={embeddingParams}
+            onParamsChange={setEmbeddingParams}
+            onReEmbed={handleReEmbed}
+          />
+        </div>
       </div>
     </div>
   );

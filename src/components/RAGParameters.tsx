@@ -32,7 +32,7 @@ interface RAGParametersProps {
 }
 
 export const RAGParameters = ({ params, onParamsChange }: RAGParametersProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
 
   const updateParam = (key: keyof RAGParams, value: number | boolean) => {
     onParamsChange({
