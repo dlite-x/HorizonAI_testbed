@@ -59,7 +59,7 @@ export const DiagnosticActions = () => {
           {isReloading ? 'Clearing...' : 'Clear All Data'}
         </Button>
         <p className="text-xs text-muted-foreground mt-2">
-          All sample content has been removed. Use file manager to upload real documents.
+          ⚠️ Current documents appear to be placeholder content (553-10K chars vs expected 50K-200K chars for real PDFs). Clear all data and upload real documents via file manager.
         </p>
       </CardContent>
     </Card>
