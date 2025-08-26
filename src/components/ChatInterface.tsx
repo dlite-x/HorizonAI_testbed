@@ -11,7 +11,7 @@ import {
   FileText, 
   Sparkles,
   MessageSquare,
-  Flag
+  Eye
 } from "lucide-react";
 import { FileData } from "./FileExplorer";
 
@@ -200,8 +200,8 @@ export const ChatInterface = ({ selectedFile, files }: ChatInterfaceProps) => {
                             : 'text-muted-foreground hover:text-foreground'
                         }`}
                       >
-                        <Flag className={`w-3 h-3 mr-1 ${message.flagged ? 'fill-current' : ''}`} />
-                        {message.flagged ? 'Flagged' : 'Flag'}
+                        <Eye className={`w-3 h-3 mr-1 ${message.flagged ? 'fill-current' : ''}`} />
+                        {message.flagged ? 'Human check requested' : 'Request human check'}
                       </Button>
                     )}
                   </div>
