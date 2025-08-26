@@ -33,7 +33,7 @@ export const DiagnosticActions = () => {
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold flex items-center gap-2">
           <Trash2 className="w-4 h-4 text-destructive" />
-          Diagnostic Actions
+          System Actions
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -45,7 +45,7 @@ export const DiagnosticActions = () => {
           className="w-full"
         >
           <TestTube className={`w-3 h-3 mr-2 ${isTesting ? 'animate-pulse' : ''}`} />
-          {isTesting ? 'Testing...' : 'Test PDF Extraction'}
+          {isTesting ? 'Testing...' : 'Test PDF Function'}
         </Button>
         
         <Button 
@@ -56,10 +56,10 @@ export const DiagnosticActions = () => {
           className="w-full"
         >
           <RefreshCcw className={`w-3 h-3 mr-2 ${isReloading ? 'animate-spin' : ''}`} />
-          {isReloading ? 'Reloading...' : 'Force Complete Reload'}
+          {isReloading ? 'Clearing...' : 'Clear All Data'}
         </Button>
         <p className="text-xs text-muted-foreground mt-2">
-          Test the PDF extraction first, then use reload if needed.
+          All sample content has been removed. Use file manager to upload real documents.
         </p>
       </CardContent>
     </Card>
