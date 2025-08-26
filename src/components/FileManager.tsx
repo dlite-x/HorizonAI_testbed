@@ -77,16 +77,16 @@ export const FileManager = ({ files, selectedFile, onFileSelect, onFilesAdded }:
   return (
     <div className="h-full flex flex-col">
       {/* Header with Drag & Drop */}
-      <div className="p-4 border-b border-border bg-card">
-        <div className="flex items-center justify-between gap-4">
+      <div className="p-3 border-b border-border bg-card">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <FolderOpen className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">File Manager</h2>
+            <FolderOpen className="w-4 h-4 text-primary" />
+            <h2 className="text-base font-semibold text-foreground">File Manager</h2>
           </div>
           
           {/* Compact Drag & Drop Zone */}
           <div
-            className={`border-2 border-dashed rounded-lg px-3 py-2 text-center transition-colors flex items-center gap-2 ${
+            className={`border-2 border-dashed rounded-lg px-2.5 py-1.5 text-center transition-colors flex items-center gap-2 ${
               isDragOver 
                 ? 'border-primary bg-primary/5' 
                 : 'border-muted-foreground/25 hover:border-primary/50'
@@ -95,16 +95,16 @@ export const FileManager = ({ files, selectedFile, onFileSelect, onFilesAdded }:
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-            <Upload className={`w-4 h-4 ${isDragOver ? 'text-primary' : 'text-muted-foreground'}`} />
+            <Upload className={`w-3.5 h-3.5 ${isDragOver ? 'text-primary' : 'text-muted-foreground'}`} />
             <span className="text-xs font-medium text-foreground">
               {isDragOver ? 'Drop here' : 'Drop files'}
             </span>
-            <Button size="sm" variant="outline" className="text-xs h-6 ml-2">
+            <Button size="sm" variant="outline" className="text-xs h-5 ml-1">
               Browse
             </Button>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground mt-2">
+        <p className="text-xs text-muted-foreground mt-1.5">
           {files.length} document{files.length !== 1 ? 's' : ''} available
         </p>
       </div>
@@ -112,24 +112,24 @@ export const FileManager = ({ files, selectedFile, onFileSelect, onFilesAdded }:
       {/* File List */}
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full">
-          <div className="p-4 space-y-2">
+          <div className="p-3 space-y-1.5">
             {files.map((file) => (
               <Card
                 key={file.id}
-                className={`p-3 cursor-pointer transition-all duration-200 border-border hover:bg-muted/50 hover:border-primary/50 ${
+                className={`p-2.5 cursor-pointer transition-all duration-200 border-border hover:bg-muted/50 hover:border-primary/50 ${
                   selectedFile?.id === file.id 
                     ? 'bg-primary/10 border-primary ring-1 ring-primary/50' 
                     : 'bg-card'
                 }`}
                 onClick={() => onFileSelect(file)}
               >
-                <div className="flex items-start gap-3">
-                  <div className="mt-1 text-primary">
+                <div className="flex items-start gap-2.5">
+                  <div className="mt-0.5 text-primary">
                     {getFileIcon(file.type)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium text-sm text-foreground break-words leading-tight">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="font-medium text-xs text-foreground break-words leading-tight">
                         {file.name}
                       </h3>
                       {uploadedFiles.includes(file.id) && (
@@ -147,7 +147,7 @@ export const FileManager = ({ files, selectedFile, onFileSelect, onFilesAdded }:
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="text-xs h-6"
+                          className="text-xs h-5"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleEmbedFile(file.id);
