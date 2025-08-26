@@ -21,6 +21,7 @@ interface PipelineStats {
   embeddedChunks: number;
   pendingDocuments: number;
   completedDocuments: number;
+  avgChunkSize: number;
 }
 
 export const PipelineDiagnostics = () => {
@@ -30,22 +31,23 @@ export const PipelineDiagnostics = () => {
     totalChunks: 0,
     embeddedChunks: 0,
     pendingDocuments: 0,
-    completedDocuments: 0
+    completedDocuments: 0,
+    avgChunkSize: 0
   });
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchPipelineStats = async () => {
     setIsLoading(true);
     try {
-      // Get document stats
+      // Get document stats with actual content length
       const { data: documents, error: docError } = await supabase
         .from('documents')
-        .select('id, size, embedding_status');
+        .select('id, size, content, embedding_status');
 
-      // Get chunk stats
+      // Get chunk stats with content length for accurate calculations
       const { data: chunks, error: chunkError } = await supabase
         .from('document_chunks')
-        .select('id');
+        .select('id, content');
 
       if (docError || chunkError) {
         console.error('Error fetching pipeline stats:', docError || chunkError);
@@ -53,11 +55,15 @@ export const PipelineDiagnostics = () => {
       }
 
       const totalDocuments = documents?.length || 0;
-      const totalCharacters = documents?.reduce((sum, doc) => sum + (doc.size || 0), 0) || 0;
+      // Use actual content length instead of file size
+      const totalCharacters = documents?.reduce((sum, doc) => sum + (doc.content?.length || 0), 0) || 0;
       const totalChunks = chunks?.length || 0;
       const embeddedChunks = totalChunks; // All chunks in the table are embedded
       const pendingDocuments = documents?.filter(d => d.embedding_status === 'pending').length || 0;
       const completedDocuments = documents?.filter(d => d.embedding_status === 'completed').length || 0;
+      
+      // Calculate actual average chunk size from the chunks themselves
+      const totalChunkCharacters = chunks?.reduce((sum, chunk) => sum + (chunk.content?.length || 0), 0) || 0;
 
       setStats({
         totalDocuments,
@@ -65,7 +71,8 @@ export const PipelineDiagnostics = () => {
         totalChunks,
         embeddedChunks,
         pendingDocuments,
-        completedDocuments
+        completedDocuments,
+        avgChunkSize: totalChunks > 0 ? Math.round(totalChunkCharacters / totalChunks) : 0
       });
 
     } catch (error) {
@@ -148,9 +155,9 @@ export const PipelineDiagnostics = () => {
               {stats.totalChunks}
             </Badge>
           </div>
-          {stats.totalCharacters > 0 && (
+          {stats.totalChunks > 0 && (
             <div className="text-xs text-muted-foreground">
-              Avg chunk size: {stats.totalChunks > 0 ? Math.round(stats.totalCharacters / stats.totalChunks) : 0} chars
+              Avg chunk size: {stats.avgChunkSize} chars
             </div>
           )}
         </div>
