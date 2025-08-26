@@ -121,10 +121,10 @@ const Index = () => {
         />
         
         {!isRagCollapsed && (
-          <>
+          <div className="flex-1 overflow-y-auto">
             <ChunkStatusDisplay />
             <DiagnosticActions />
-          </>
+          </div>
         )}
       </div>
 
