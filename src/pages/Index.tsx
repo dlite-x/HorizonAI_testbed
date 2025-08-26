@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { FileData } from "@/components/FileExplorer";
 import { ChatInterface } from "@/components/ChatInterface";
 import { RAGParameters, RAGParams } from "@/components/RAGParameters";
