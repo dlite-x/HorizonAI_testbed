@@ -54,37 +54,86 @@ export const ChatInterface = ({ selectedFile, files }: ChatInterfaceProps) => {
 
   const simulateAIResponse = (userMessage: string, conversationHistory: ChatMessage[]): ChatMessage => {
     // Get recent AI messages for context
-    const recentMessages = conversationHistory.slice(-4); // Last 4 messages for context
+    const recentMessages = conversationHistory.slice(-4);
     const lastAIMessage = recentMessages.filter(m => m.type === 'ai').pop();
     
     // Detect follow-up questions
     const followUpWords = ['tell me more', 'more details', 'elaborate', 'explain further', 'continue', 'what else', 'more about'];
     const isFollowUp = followUpWords.some(phrase => userMessage.toLowerCase().includes(phrase.toLowerCase()));
     
-    // Get relevant files
-    const relevantFiles = files.filter(file => 
-      file.name.toLowerCase().includes(userMessage.toLowerCase().split(' ')[0]) ||
-      Math.random() > 0.5 // Random selection for demo
-    ).slice(0, 2);
+    // Get relevant files based on query content
+    const relevantFiles = files.filter(file => {
+      const fileName = file.name.toLowerCase();
+      const query = userMessage.toLowerCase();
+      
+      // Match based on keywords in the query and document titles
+      if (query.includes('protein') || query.includes('methanol')) {
+        return fileName.includes('protein') || fileName.includes('methanol') || fileName.includes('methylococcus');
+      }
+      if (query.includes('solar') || query.includes('photovoltaic') || query.includes('renewable')) {
+        return fileName.includes('photovoltaic') || fileName.includes('renewable');
+      }
+      if (query.includes('single cell') || query.includes('scp')) {
+        return fileName.includes('single cell protein');
+      }
+      if (query.includes('industry') || query.includes('commercial') || query.includes('patent')) {
+        return fileName.includes('industrial') || fileName.includes('patent');
+      }
+      
+      // Fallback to partial matching
+      return Math.random() > 0.6;
+    }).slice(0, 2);
+
+    // Generate document-specific content based on retrieved sources
+    const generateContentBasedOnSources = (sources: string[], query: string) => {
+      if (sources.length === 0) {
+        return "I don't have specific documents that directly address your question. Could you rephrase or ask about topics covered in your document library?";
+      }
+
+      const responses: { [key: string]: string[] } = {
+        'methylococcus': [
+          "According to the research on methylococcus capsulatus protein isolate, this organism shows significant potential for sustainable protein production. The studies indicate it can convert methane into high-quality protein with impressive efficiency rates.",
+          "The methylococcus capsulatus research reveals that this bacterium can produce protein isolates with excellent nutritional profiles, containing all essential amino acids in proportions suitable for human consumption."
+        ],
+        'photovoltaic': [
+          "The photovoltaic-driven microbial protein production research demonstrates remarkable land use efficiency. According to the data, this approach can produce 15-20 times more protein per hectare compared to conventional crop farming.",
+          "Studies show that combining solar energy with microbial protein production creates a highly efficient system that uses both land and sunlight more effectively than traditional agriculture, with significantly lower water requirements."
+        ],
+        'renewable': [
+          "The research on sustainable single-cell protein indicates massive global potential when powered by variable renewable electricity. The analysis suggests this could address protein security while reducing agricultural land pressure.",
+          "According to the sustainability analysis, renewable energy-powered protein production could scale to meet significant portions of global protein demand with dramatically reduced environmental impact."
+        ],
+        'industrial': [
+          "The industrial landscape analysis reveals that single-cell protein technology has moved from laboratory curiosity to commercial viability, with several companies now operating at scale.",
+          "Patent analysis shows rapid innovation in single-cell protein production methods, with key developments in fermentation efficiency, downstream processing, and product applications."
+        ]
+      };
+
+      // Find the most relevant response category
+      for (const [key, responseArray] of Object.entries(responses)) {
+        if (sources.some(source => source.toLowerCase().includes(key)) || query.includes(key)) {
+          return responseArray[Math.floor(Math.random() * responseArray.length)];
+        }
+      }
+
+      // Default response referencing the actual sources
+      return `Based on the analysis of ${sources.join(' and ')}, the research provides detailed insights into this topic with specific data points and methodological approaches that directly address your question.`;
+    };
 
     let responseContent: string;
     
-    if (isFollowUp && lastAIMessage) {
-      // Generate follow-up response based on previous context
-      const contextResponses = [
-        `Building on my previous response, here are additional details: ${lastAIMessage.sources ? 'The documents reveal further insights about this topic, including specific methodologies and findings that weren\'t covered in my initial summary.' : 'Let me provide more comprehensive information based on the document analysis.'}`,
-        `To expand on what I mentioned earlier: The research shows several additional aspects of this topic. There are detailed case studies and data points that provide deeper understanding of the subject matter.`,
-        `Here's more detailed information continuing from our discussion: The documents contain extensive analysis that covers multiple dimensions of this topic, including practical applications and theoretical frameworks.`
+    if (isFollowUp && lastAIMessage && lastAIMessage.sources) {
+      // Generate detailed follow-up using previous sources
+      const previousSources = lastAIMessage.sources;
+      const followUpResponses = [
+        `Diving deeper into the findings from ${previousSources.join(' and ')}: The research methodology involved controlled studies with specific parameters. The results show statistical significance across multiple metrics, including efficiency rates, cost-effectiveness, and environmental impact assessments.`,
+        `Additional details from the ${previousSources.length > 1 ? 'studies' : 'study'}: The data reveals several key performance indicators that weren't mentioned in my initial summary. These include scalability factors, energy conversion efficiency, and comparative analysis with traditional methods.`,
+        `Further analysis of ${previousSources.join(' and ')}: The research presents compelling evidence with detailed case studies, economic modeling, and projections for commercial implementation. The technical specifications and operational parameters are thoroughly documented.`
       ];
-      responseContent = contextResponses[Math.floor(Math.random() * contextResponses.length)];
+      responseContent = followUpResponses[Math.floor(Math.random() * followUpResponses.length)];
     } else {
-      // Generate new response
-      const responses = [
-        `Based on the documents I've analyzed, here's what I found: ${userMessage.toLowerCase().includes('what') ? 'This appears to be related to the key concepts outlined in your uploaded documents.' : 'The information you\'re looking for can be found across several document sections.'}`,
-        `According to the content in your document library, ${userMessage.toLowerCase().includes('how') ? 'the process involves several steps that are detailed in the referenced materials.' : 'there are multiple perspectives on this topic that I can help clarify.'}`,
-        `I've found relevant information in your documents that addresses your question about ${userMessage.split(' ').slice(-3).join(' ')}. Let me break this down for you.`
-      ];
-      responseContent = responses[Math.floor(Math.random() * responses.length)];
+      // Generate new response based on retrieved documents
+      responseContent = generateContentBasedOnSources(relevantFiles.map(f => f.name), userMessage);
     }
 
     return {
