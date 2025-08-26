@@ -52,23 +52,45 @@ export const ChatInterface = ({ selectedFile, files }: ChatInterfaceProps) => {
     scrollToBottom();
   }, [messages]);
 
-  const simulateAIResponse = (userMessage: string): ChatMessage => {
-    // Simulate RAG response with relevant sources
+  const simulateAIResponse = (userMessage: string, conversationHistory: ChatMessage[]): ChatMessage => {
+    // Get recent AI messages for context
+    const recentMessages = conversationHistory.slice(-4); // Last 4 messages for context
+    const lastAIMessage = recentMessages.filter(m => m.type === 'ai').pop();
+    
+    // Detect follow-up questions
+    const followUpWords = ['tell me more', 'more details', 'elaborate', 'explain further', 'continue', 'what else', 'more about'];
+    const isFollowUp = followUpWords.some(phrase => userMessage.toLowerCase().includes(phrase.toLowerCase()));
+    
+    // Get relevant files
     const relevantFiles = files.filter(file => 
       file.name.toLowerCase().includes(userMessage.toLowerCase().split(' ')[0]) ||
       Math.random() > 0.5 // Random selection for demo
     ).slice(0, 2);
 
-    const responses = [
-      `Based on the documents I've analyzed, here's what I found: ${userMessage.toLowerCase().includes('what') ? 'This appears to be related to the key concepts outlined in your uploaded documents.' : 'The information you\'re looking for can be found across several document sections.'}`,
-      `According to the content in your document library, ${userMessage.toLowerCase().includes('how') ? 'the process involves several steps that are detailed in the referenced materials.' : 'there are multiple perspectives on this topic that I can help clarify.'}`,
-      `I've found relevant information in your documents that addresses your question about ${userMessage.split(' ').slice(-3).join(' ')}. Let me break this down for you.`
-    ];
+    let responseContent: string;
+    
+    if (isFollowUp && lastAIMessage) {
+      // Generate follow-up response based on previous context
+      const contextResponses = [
+        `Building on my previous response, here are additional details: ${lastAIMessage.sources ? 'The documents reveal further insights about this topic, including specific methodologies and findings that weren\'t covered in my initial summary.' : 'Let me provide more comprehensive information based on the document analysis.'}`,
+        `To expand on what I mentioned earlier: The research shows several additional aspects of this topic. There are detailed case studies and data points that provide deeper understanding of the subject matter.`,
+        `Here's more detailed information continuing from our discussion: The documents contain extensive analysis that covers multiple dimensions of this topic, including practical applications and theoretical frameworks.`
+      ];
+      responseContent = contextResponses[Math.floor(Math.random() * contextResponses.length)];
+    } else {
+      // Generate new response
+      const responses = [
+        `Based on the documents I've analyzed, here's what I found: ${userMessage.toLowerCase().includes('what') ? 'This appears to be related to the key concepts outlined in your uploaded documents.' : 'The information you\'re looking for can be found across several document sections.'}`,
+        `According to the content in your document library, ${userMessage.toLowerCase().includes('how') ? 'the process involves several steps that are detailed in the referenced materials.' : 'there are multiple perspectives on this topic that I can help clarify.'}`,
+        `I've found relevant information in your documents that addresses your question about ${userMessage.split(' ').slice(-3).join(' ')}. Let me break this down for you.`
+      ];
+      responseContent = responses[Math.floor(Math.random() * responses.length)];
+    }
 
     return {
       id: Date.now().toString(),
       type: 'ai',
-      content: responses[Math.floor(Math.random() * responses.length)],
+      content: responseContent,
       timestamp: new Date(),
       sources: relevantFiles.map(f => f.name),
       flagged: false
@@ -91,7 +113,7 @@ export const ChatInterface = ({ selectedFile, files }: ChatInterfaceProps) => {
 
     // Simulate AI processing time
     setTimeout(() => {
-      const aiResponse = simulateAIResponse(inputMessage);
+      const aiResponse = simulateAIResponse(inputMessage, messages);
       setMessages(prev => [...prev, aiResponse]);
       setIsLoading(false);
     }, 1500);
