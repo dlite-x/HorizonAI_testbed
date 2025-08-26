@@ -9,7 +9,8 @@ import {
   Download, 
   Eye, 
   Calendar,
-  HardDrive
+  HardDrive,
+  MessageSquare
 } from "lucide-react";
 
 export interface FileData {

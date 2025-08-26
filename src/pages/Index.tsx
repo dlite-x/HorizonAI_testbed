@@ -1,11 +1,20 @@
 import { useState, useEffect } from "react";
 import { FileExplorer, FileData } from "@/components/FileExplorer";
 import { ChatInterface } from "@/components/ChatInterface";
+import { RAGParameters, RAGParams } from "@/components/RAGParameters";
 import { Separator } from "@/components/ui/separator";
 
 const Index = () => {
   const [selectedFile, setSelectedFile] = useState<FileData | null>(null);
   const [files, setFiles] = useState<FileData[]>([]);
+  const [ragParams, setRagParams] = useState<RAGParams>({
+    temperature: 0.7,
+    topK: 3,
+    maxTokens: 1000,
+    similarityThreshold: 0.8,
+    enableReranking: true,
+    contextWindow: 4
+  });
 
   useEffect(() => {
     // Load documents from the public/documents folder
@@ -42,11 +51,17 @@ const Index = () => {
   return (
     <div className="h-screen flex bg-background">
       {/* File Explorer Panel */}
-      <div className="w-[560px] border-r-2 border-border bg-explorer-bg flex-shrink-0 shadow-medium relative z-10">
-        <FileExplorer
-          files={files}
-          selectedFile={selectedFile}
-          onFileSelect={setSelectedFile}
+      <div className="w-[560px] border-r-2 border-border bg-explorer-bg flex-shrink-0 shadow-medium relative z-10 flex flex-col">
+        <div className="flex-1">
+          <FileExplorer
+            files={files}
+            selectedFile={selectedFile}
+            onFileSelect={setSelectedFile}
+          />
+        </div>
+        <RAGParameters
+          params={ragParams}
+          onParamsChange={setRagParams}
         />
       </div>
 
@@ -58,6 +73,7 @@ const Index = () => {
         <ChatInterface
           selectedFile={selectedFile}
           files={files}
+          ragParams={ragParams}
         />
       </div>
     </div>

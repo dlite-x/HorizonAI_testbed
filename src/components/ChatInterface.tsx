@@ -14,6 +14,7 @@ import {
   Eye
 } from "lucide-react";
 import { FileData } from "./FileExplorer";
+import { RAGParams } from "./RAGParameters";
 
 interface ChatMessage {
   id: string;
@@ -27,9 +28,10 @@ interface ChatMessage {
 interface ChatInterfaceProps {
   selectedFile: FileData | null;
   files: FileData[];
+  ragParams: RAGParams;
 }
 
-export const ChatInterface = ({ selectedFile, files }: ChatInterfaceProps) => {
+export const ChatInterface = ({ selectedFile, files, ragParams }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -53,8 +55,8 @@ export const ChatInterface = ({ selectedFile, files }: ChatInterfaceProps) => {
   }, [messages]);
 
   const simulateAIResponse = (userMessage: string, conversationHistory: ChatMessage[]): ChatMessage => {
-    // Get recent AI messages for context
-    const recentMessages = conversationHistory.slice(-4);
+    // Get recent AI messages for context based on ragParams
+    const recentMessages = conversationHistory.slice(-ragParams.contextWindow);
     const lastAIMessage = recentMessages.filter(m => m.type === 'ai').pop();
     
     // Detect follow-up questions
@@ -82,7 +84,7 @@ export const ChatInterface = ({ selectedFile, files }: ChatInterfaceProps) => {
       
       // Fallback to partial matching
       return Math.random() > 0.6;
-    }).slice(0, 2);
+    }).slice(0, ragParams.topK);
 
     // Generate document-specific content based on retrieved sources
     const generateContentBasedOnSources = (sources: string[], query: string) => {
