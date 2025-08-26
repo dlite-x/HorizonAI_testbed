@@ -87,10 +87,14 @@ const Index = () => {
   };
 
   const handleReEmbed = async () => {
-    console.log('Re-embedding with new parameters:', embeddingParams);
-    const success = await clearAndReEmbedAllDocuments(embeddingParams.chunkSize, embeddingParams.overlap);
+    console.log('Starting complete reload with PDF text extraction...');
+    
+    // Import and use the force reload function
+    const { forceFullReload } = await import("@/utils/forceReload");
+    const success = await forceFullReload();
+    
     if (success) {
-      toast.success('Re-embedding started with new parameters!');
+      toast.success('Documents reloaded with proper PDF text extraction!');
     }
   };
 
