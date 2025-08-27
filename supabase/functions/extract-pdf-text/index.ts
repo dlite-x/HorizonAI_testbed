@@ -35,14 +35,14 @@ serve(async (req) => {
       throw new Error(`Failed to fetch PDF: ${pdfResponse.status} ${pdfResponse.statusText}`);
     }
     
-    const pdfBuffer = await pdfResponse.arrayBuffer();
-    console.log(`PDF fetched, size: ${pdfBuffer.byteLength} bytes`);
+    const pdfArrayBuffer = await pdfResponse.arrayBuffer();
+    console.log(`PDF fetched, size: ${pdfArrayBuffer.byteLength} bytes`);
     
-    // Extract text from the PDF
-    const extractedText = await extractTextFromPDF(new Uint8Array(pdfBuffer));
+    // Use PDF.js to extract text
+    const extractedText = await extractTextWithPDFJS(pdfArrayBuffer);
     
-    if (!extractedText || extractedText.length < 50) {
-      throw new Error('Failed to extract meaningful text from PDF');
+    if (!extractedText || extractedText.length < 100) {
+      throw new Error(`Extracted text too short: ${extractedText?.length || 0} characters`);
     }
     
     console.log(`Successfully extracted ${extractedText.length} characters from PDF`);
@@ -50,7 +50,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         extractedText: extractedText,
-        fileSize: pdfBuffer.byteLength,
+        fileSize: pdfArrayBuffer.byteLength,
         textLength: extractedText.length
       }),
       { 
@@ -71,71 +71,41 @@ serve(async (req) => {
   }
 });
 
-async function extractTextFromPDF(pdfBytes: Uint8Array): Promise<string> {
-  const pdfString = new TextDecoder('latin1').decode(pdfBytes);
-  
-  // Extract text from PDF streams and text objects
-  const texts: string[] = [];
-  
-  // Method 1: Extract from Tj and TJ operations
-  const tjRegex = /\((.*?)\)\s*Tj/g;
-  let match;
-  while ((match = tjRegex.exec(pdfString)) !== null) {
-    texts.push(match[1]);
-  }
-  
-  // Method 2: Extract from TJ arrays
-  const tjArrayRegex = /\[(.*?)\]\s*TJ/g;
-  while ((match = tjArrayRegex.exec(pdfString)) !== null) {
-    const content = match[1];
-    // Extract strings from the array
-    const stringMatches = content.match(/\((.*?)\)/g);
-    if (stringMatches) {
-      stringMatches.forEach(str => {
-        const cleaned = str.replace(/[()]/g, '');
-        if (cleaned.trim()) texts.push(cleaned);
-      });
+async function extractTextWithPDFJS(pdfArrayBuffer: ArrayBuffer): Promise<string> {
+  try {
+    // Import PDF.js
+    const pdfjsLib = await import('https://cdn.skypack.dev/pdfjs-dist@3.11.174/build/pdf.min.js');
+    
+    // Load the PDF document
+    const pdf = await pdfjsLib.getDocument({ data: pdfArrayBuffer }).promise;
+    console.log(`PDF loaded with ${pdf.numPages} pages`);
+    
+    let fullText = '';
+    
+    // Extract text from each page
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      
+      // Combine all text items from the page
+      const pageText = textContent.items
+        .map((item: any) => item.str)
+        .join(' ');
+      
+      fullText += pageText + '\n';
+      console.log(`Extracted ${pageText.length} characters from page ${pageNum}`);
     }
+    
+    // Clean up the text
+    const cleanedText = fullText
+      .replace(/\s+/g, ' ')  // Normalize whitespace
+      .trim();
+    
+    console.log(`Total extracted text: ${cleanedText.length} characters`);
+    return cleanedText;
+    
+  } catch (error) {
+    console.error('PDF.js extraction failed:', error);
+    throw new Error(`PDF.js extraction failed: ${error.message}`);
   }
-  
-  // Method 3: Extract from BT...ET blocks
-  const btEtRegex = /BT\s+(.*?)\s+ET/gs;
-  while ((match = btEtRegex.exec(pdfString)) !== null) {
-    const block = match[1];
-    const textMatches = block.match(/\((.*?)\)\s*Tj/g);
-    if (textMatches) {
-      textMatches.forEach(tm => {
-        const content = tm.match(/\((.*?)\)/);
-        if (content) texts.push(content[1]);
-      });
-    }
-  }
-  
-  // Method 4: Look for uncompressed text streams
-  const streamRegex = /stream\s*([\s\S]*?)\s*endstream/g;
-  while ((match = streamRegex.exec(pdfString)) !== null) {
-    const stream = match[1];
-    // Look for readable text patterns
-    const readableMatches = stream.match(/[A-Za-z][A-Za-z0-9\s.,;:!?\-()]{10,}/g);
-    if (readableMatches) {
-      texts.push(...readableMatches);
-    }
-  }
-  
-  // Clean and join all extracted text
-  const extractedText = texts
-    .map(text => text
-      .replace(/\\n/g, '\n')
-      .replace(/\\r/g, '\r')
-      .replace(/\\t/g, '\t')
-      .replace(/\\\\/g, '\\')
-      .replace(/\\([()])/g, '$1')
-    )
-    .filter(text => text.trim().length > 0)
-    .join(' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  
-  console.log(`Extracted ${extractedText.length} characters from PDF`);
-  return extractedText;
 }
