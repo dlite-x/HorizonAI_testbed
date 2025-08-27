@@ -29,22 +29,22 @@ serve(async (req) => {
       throw new Error(`Failed to fetch PDF: ${pdfResponse.status}`);
     }
     
-    const pdfBytes = new Uint8Array(await pdfResponse.arrayBuffer());
-    console.log(`PDF fetched, size: ${pdfBytes.length} bytes`);
+    const pdfArrayBuffer = await pdfResponse.arrayBuffer();
+    console.log(`PDF fetched, size: ${pdfArrayBuffer.byteLength} bytes`);
     
-    // Simple text extraction using basic string parsing
-    const extractedText = extractTextFromPDFBytes(pdfBytes);
+    // Use pdf-parse equivalent for Deno
+    const extractedText = await extractPDFText(pdfArrayBuffer);
     
     if (extractedText.length < 100) {
-      throw new Error(`No text extracted from PDF`);
+      throw new Error(`Insufficient text extracted: ${extractedText.length} characters`);
     }
     
-    console.log(`Extracted ${extractedText.length} characters`);
+    console.log(`Successfully extracted ${extractedText.length} characters`);
     
     return new Response(
       JSON.stringify({ 
         extractedText,
-        fileSize: pdfBytes.length,
+        fileSize: pdfArrayBuffer.byteLength,
         textLength: extractedText.length
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -59,46 +59,20 @@ serve(async (req) => {
   }
 });
 
-function extractTextFromPDFBytes(pdfBytes: Uint8Array): string {
-  // Convert to string using latin1 to preserve byte values
-  const pdfString = Array.from(pdfBytes, byte => String.fromCharCode(byte)).join('');
-  
-  const texts: string[] = [];
-  
-  // Extract text between parentheses in Tj operations
-  const tjMatches = pdfString.match(/\([^)]*\)\s*Tj/g);
-  if (tjMatches) {
-    tjMatches.forEach(match => {
-      const text = match.match(/\(([^)]*)\)/)?.[1];
-      if (text && text.length > 0) {
-        texts.push(text);
-      }
-    });
+async function extractPDFText(pdfBuffer: ArrayBuffer): Promise<string> {
+  try {
+    // Import pdf-parse for Deno
+    const { default: pdf } = await import('https://esm.sh/pdf-parse@1.1.1');
+    
+    // Extract text using pdf-parse (equivalent to PyMuPDF)
+    const data = await pdf(pdfBuffer);
+    
+    console.log(`PDF parsed: ${data.numpages} pages, ${data.text.length} characters`);
+    
+    return data.text;
+    
+  } catch (error) {
+    console.error('PDF parsing failed:', error);
+    throw new Error(`PDF parsing error: ${error.message}`);
   }
-  
-  // Extract text from TJ array operations
-  const tjArrayMatches = pdfString.match(/\[[^\]]*\]\s*TJ/g);
-  if (tjArrayMatches) {
-    tjArrayMatches.forEach(match => {
-      const strings = match.match(/\(([^)]*)\)/g);
-      if (strings) {
-        strings.forEach(str => {
-          const text = str.slice(1, -1); // Remove parentheses
-          if (text && text.length > 0) {
-            texts.push(text);
-          }
-        });
-      }
-    });
-  }
-  
-  // Join all text and clean it up
-  return texts
-    .join(' ')
-    .replace(/\\n/g, '\n')
-    .replace(/\\r/g, '\r')
-    .replace(/\\t/g, '\t')
-    .replace(/\\\\/g, '\\')
-    .replace(/\s+/g, ' ')
-    .trim();
 }
