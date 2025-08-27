@@ -6,7 +6,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -17,95 +16,89 @@ serve(async (req) => {
     if (!documentName) {
       return new Response(
         JSON.stringify({ error: 'Document name is required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     console.log(`PDF extraction requested for: ${documentName}`);
     
-    // Fetch the PDF file from the public documents folder
     const pdfUrl = `https://e3b6df49-d303-4767-b20d-62fadc5cdf39.sandbox.lovable.dev/documents/${documentName}`;
-    console.log(`Fetching PDF from: ${pdfUrl}`);
-    
     const pdfResponse = await fetch(pdfUrl);
+    
     if (!pdfResponse.ok) {
-      throw new Error(`Failed to fetch PDF: ${pdfResponse.status} ${pdfResponse.statusText}`);
+      throw new Error(`Failed to fetch PDF: ${pdfResponse.status}`);
     }
     
-    const pdfArrayBuffer = await pdfResponse.arrayBuffer();
-    console.log(`PDF fetched, size: ${pdfArrayBuffer.byteLength} bytes`);
+    const pdfBytes = new Uint8Array(await pdfResponse.arrayBuffer());
+    console.log(`PDF fetched, size: ${pdfBytes.length} bytes`);
     
-    // Use PDF.js to extract text
-    const extractedText = await extractTextWithPDFJS(pdfArrayBuffer);
+    // Simple text extraction using basic string parsing
+    const extractedText = extractTextFromPDFBytes(pdfBytes);
     
-    if (!extractedText || extractedText.length < 100) {
-      throw new Error(`Extracted text too short: ${extractedText?.length || 0} characters`);
+    if (extractedText.length < 100) {
+      throw new Error(`No text extracted from PDF`);
     }
     
-    console.log(`Successfully extracted ${extractedText.length} characters from PDF`);
+    console.log(`Extracted ${extractedText.length} characters`);
     
     return new Response(
       JSON.stringify({ 
-        extractedText: extractedText,
-        fileSize: pdfArrayBuffer.byteLength,
+        extractedText,
+        fileSize: pdfBytes.length,
         textLength: extractedText.length
       }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('PDF extraction error:', error);
     return new Response(
       JSON.stringify({ error: `PDF extraction failed: ${error.message}` }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
 
-async function extractTextWithPDFJS(pdfArrayBuffer: ArrayBuffer): Promise<string> {
-  try {
-    // Import PDF.js
-    const pdfjsLib = await import('https://cdn.skypack.dev/pdfjs-dist@3.11.174/build/pdf.min.js');
-    
-    // Load the PDF document
-    const pdf = await pdfjsLib.getDocument({ data: pdfArrayBuffer }).promise;
-    console.log(`PDF loaded with ${pdf.numPages} pages`);
-    
-    let fullText = '';
-    
-    // Extract text from each page
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const textContent = await page.getTextContent();
-      
-      // Combine all text items from the page
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(' ');
-      
-      fullText += pageText + '\n';
-      console.log(`Extracted ${pageText.length} characters from page ${pageNum}`);
-    }
-    
-    // Clean up the text
-    const cleanedText = fullText
-      .replace(/\s+/g, ' ')  // Normalize whitespace
-      .trim();
-    
-    console.log(`Total extracted text: ${cleanedText.length} characters`);
-    return cleanedText;
-    
-  } catch (error) {
-    console.error('PDF.js extraction failed:', error);
-    throw new Error(`PDF.js extraction failed: ${error.message}`);
+function extractTextFromPDFBytes(pdfBytes: Uint8Array): string {
+  // Convert to string using latin1 to preserve byte values
+  const pdfString = Array.from(pdfBytes, byte => String.fromCharCode(byte)).join('');
+  
+  const texts: string[] = [];
+  
+  // Extract text between parentheses in Tj operations
+  const tjMatches = pdfString.match(/\([^)]*\)\s*Tj/g);
+  if (tjMatches) {
+    tjMatches.forEach(match => {
+      const text = match.match(/\(([^)]*)\)/)?.[1];
+      if (text && text.length > 0) {
+        texts.push(text);
+      }
+    });
   }
+  
+  // Extract text from TJ array operations
+  const tjArrayMatches = pdfString.match(/\[[^\]]*\]\s*TJ/g);
+  if (tjArrayMatches) {
+    tjArrayMatches.forEach(match => {
+      const strings = match.match(/\(([^)]*)\)/g);
+      if (strings) {
+        strings.forEach(str => {
+          const text = str.slice(1, -1); // Remove parentheses
+          if (text && text.length > 0) {
+            texts.push(text);
+          }
+        });
+      }
+    });
+  }
+  
+  // Join all text and clean it up
+  return texts
+    .join(' ')
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '\r')
+    .replace(/\\t/g, '\t')
+    .replace(/\\\\/g, '\\')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
