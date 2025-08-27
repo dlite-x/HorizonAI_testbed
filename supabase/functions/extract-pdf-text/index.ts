@@ -26,143 +26,116 @@ serve(async (req) => {
 
     console.log(`PDF extraction requested for: ${documentName}`);
     
-    try {
-      // Fetch the PDF file from the public documents folder
-      const pdfUrl = `https://e3b6df49-d303-4767-b20d-62fadc5cdf39.sandbox.lovable.dev/documents/${documentName}`;
-      console.log(`Fetching PDF from: ${pdfUrl}`);
-      
-      const pdfResponse = await fetch(pdfUrl);
-      if (!pdfResponse.ok) {
-        throw new Error(`Failed to fetch PDF: ${pdfResponse.status} ${pdfResponse.statusText}`);
-      }
-      
-      const pdfBuffer = await pdfResponse.arrayBuffer();
-      console.log(`PDF fetched, size: ${pdfBuffer.byteLength} bytes`);
-      
-      // Simple PDF text extraction using basic parsing
-      const pdfText = await extractTextFromPDF(new Uint8Array(pdfBuffer));
-      
-      // Fallback to placeholder if extraction fails or returns too little text
-      const extractedText = (pdfText && pdfText.length > 500) ? pdfText : getDocumentContent(documentName);
-      console.log(`Final text content: ${extractedText.length} characters`);
-      
-      return new Response(
-        JSON.stringify({ 
-          extractedText: extractedText,
-          fileSize: pdfBuffer.byteLength,
-          textLength: extractedText.length,
-          extracted: pdfText && pdfText.length > 500 ? 'pdf' : 'fallback'
-        }),
-        { 
-          status: 200, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-      
-    } catch (fetchError) {
-      console.error(`Error fetching PDF ${documentName}:`, fetchError);
-      return new Response(
-        JSON.stringify({ 
-          error: `Failed to fetch PDF: ${fetchError.message}`,
-          extractedText: getDocumentContent(documentName) // Fallback
-        }),
-        { 
-          status: 200, // Return 200 with fallback content
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+    // Fetch the PDF file from the public documents folder
+    const pdfUrl = `https://e3b6df49-d303-4767-b20d-62fadc5cdf39.sandbox.lovable.dev/documents/${documentName}`;
+    console.log(`Fetching PDF from: ${pdfUrl}`);
+    
+    const pdfResponse = await fetch(pdfUrl);
+    if (!pdfResponse.ok) {
+      throw new Error(`Failed to fetch PDF: ${pdfResponse.status} ${pdfResponse.statusText}`);
     }
+    
+    const pdfBuffer = await pdfResponse.arrayBuffer();
+    console.log(`PDF fetched, size: ${pdfBuffer.byteLength} bytes`);
+    
+    // Extract text from the PDF
+    const extractedText = await extractTextFromPDF(new Uint8Array(pdfBuffer));
+    
+    if (!extractedText || extractedText.length < 50) {
+      throw new Error('Failed to extract meaningful text from PDF');
+    }
+    
+    console.log(`Successfully extracted ${extractedText.length} characters from PDF`);
+    
+    return new Response(
+      JSON.stringify({ 
+        extractedText: extractedText,
+        fileSize: pdfBuffer.byteLength,
+        textLength: extractedText.length
+      }),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
 
   } catch (error) {
     console.error('PDF extraction error:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: `PDF extraction failed: ${error.message}` }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
+  }
 });
 
 async function extractTextFromPDF(pdfBytes: Uint8Array): Promise<string> {
-  try {
-    // Convert bytes to string for basic text search
-    const pdfString = new TextDecoder('utf-8', { fatal: false }).decode(pdfBytes);
-    
-    // Look for text streams in PDF
-    const textRegex = /BT\s*(.*?)\s*ET/gs;
-    const tjRegex = /\[(.*?)\]\s*TJ/g;
-    const streamRegex = /stream\s*([\s\S]*?)\s*endstream/g;
-    
-    let extractedText = '';
-    
-    // Extract text from TJ operations
-    let match;
-    while ((match = tjRegex.exec(pdfString)) !== null) {
-      let text = match[1];
-      // Clean up text - remove parentheses and decode basic characters
-      text = text.replace(/[()]/g, '').replace(/\\n/g, '\n').replace(/\\r/g, '\r');
-      extractedText += text + ' ';
+  const pdfString = new TextDecoder('latin1').decode(pdfBytes);
+  
+  // Extract text from PDF streams and text objects
+  const texts: string[] = [];
+  
+  // Method 1: Extract from Tj and TJ operations
+  const tjRegex = /\((.*?)\)\s*Tj/g;
+  let match;
+  while ((match = tjRegex.exec(pdfString)) !== null) {
+    texts.push(match[1]);
+  }
+  
+  // Method 2: Extract from TJ arrays
+  const tjArrayRegex = /\[(.*?)\]\s*TJ/g;
+  while ((match = tjArrayRegex.exec(pdfString)) !== null) {
+    const content = match[1];
+    // Extract strings from the array
+    const stringMatches = content.match(/\((.*?)\)/g);
+    if (stringMatches) {
+      stringMatches.forEach(str => {
+        const cleaned = str.replace(/[()]/g, '');
+        if (cleaned.trim()) texts.push(cleaned);
+      });
     }
-    
-    // Extract text from BT...ET blocks
-    while ((match = textRegex.exec(pdfString)) !== null) {
-      let text = match[1];
-      // Extract Tj operations
-      const tjMatches = text.match(/\((.*?)\)\s*Tj/g);
-      if (tjMatches) {
-        tjMatches.forEach(tj => {
-          const content = tj.match(/\((.*?)\)/);
-          if (content) {
-            extractedText += content[1] + ' ';
-          }
-        });
-      }
+  }
+  
+  // Method 3: Extract from BT...ET blocks
+  const btEtRegex = /BT\s+(.*?)\s+ET/gs;
+  while ((match = btEtRegex.exec(pdfString)) !== null) {
+    const block = match[1];
+    const textMatches = block.match(/\((.*?)\)\s*Tj/g);
+    if (textMatches) {
+      textMatches.forEach(tm => {
+        const content = tm.match(/\((.*?)\)/);
+        if (content) texts.push(content[1]);
+      });
     }
-    
-    // Look for readable text in streams
-    while ((match = streamRegex.exec(pdfString)) !== null) {
-      const stream = match[1];
-      // Extract readable ASCII text from streams
-      const readableText = stream.match(/[a-zA-Z0-9\s.,;:!?()[\]{}-]{4,}/g);
-      if (readableText) {
-        extractedText += readableText.join(' ') + ' ';
-      }
+  }
+  
+  // Method 4: Look for uncompressed text streams
+  const streamRegex = /stream\s*([\s\S]*?)\s*endstream/g;
+  while ((match = streamRegex.exec(pdfString)) !== null) {
+    const stream = match[1];
+    // Look for readable text patterns
+    const readableMatches = stream.match(/[A-Za-z][A-Za-z0-9\s.,;:!?\-()]{10,}/g);
+    if (readableMatches) {
+      texts.push(...readableMatches);
     }
-    
-    // Clean up the extracted text
-    extractedText = extractedText
-      .replace(/\s+/g, ' ')  // Normalize whitespace
-      .replace(/[^\x20-\x7E\n\r\t]/g, '') // Remove non-printable characters
-      .trim();
-    
-    console.log(`PDF text extraction: ${extractedText.length} characters extracted`);
-    return extractedText;
-    
-  } catch (error) {
-    console.error('PDF text extraction failed:', error);
-    return '';
-  }
-}
-
-function getDocumentContent(filename: string): string {
-  const name = filename.toLowerCase();
-  
-  if (name.includes('food compositions') && name.includes('methylococcus')) {
-    return `This comprehensive research document examines food compositions and protein isolates derived from Methylococcus capsulatus. The study covers regulatory aspects for food safety approval, detailed nutritional profiles including amino acid compositions, protein content analysis using various analytical methods, safety assessments for human consumption including toxicological studies, and commercial applications of single-cell protein derived from methanotrophic bacteria. The research focuses specifically on the Bath strain of M. capsulatus and its potential use in sustainable protein production for human food applications. The document includes extensive data on protein quality, digestibility studies, nutritional value comparisons with conventional protein sources, processing methods for protein isolation and purification, regulatory pathways for novel food approval, and market potential analysis for microbial protein products.`;
   }
   
-  if (name.includes('global potential') && name.includes('sustainable')) {
-    return `This extensive research paper analyzes the global potential of sustainable single-cell protein production based on variable renewable electricity systems. The study examines scalability factors across different geographic regions, comprehensive environmental impact assessments including life cycle analysis, energy conversion efficiency calculations for various renewable energy sources, land use optimization strategies for protein production facilities, economic viability analyses at industrial scale including cost projections, and detailed projections for meeting global protein demand through renewable energy-powered microbial fermentation processes. The research includes modeling of different scenarios for renewable energy integration, assessment of technological readiness levels, evaluation of infrastructure requirements, analysis of regulatory frameworks in different countries, and comprehensive market analysis for sustainable protein alternatives.`;
-  }
+  // Clean and join all extracted text
+  const extractedText = texts
+    .map(text => text
+      .replace(/\\n/g, '\n')
+      .replace(/\\r/g, '\r')
+      .replace(/\\t/g, '\t')
+      .replace(/\\\\/g, '\\')
+      .replace(/\\([()])/g, '$1')
+    )
+    .filter(text => text.trim().length > 0)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   
-  if (name.includes('photovoltaic') && name.includes('microbial protein')) {
-    return `This detailed study demonstrates how photovoltaic-driven microbial protein production systems can utilize land and sunlight resources more efficiently than conventional agricultural crops. The research provides comprehensive comparisons of resource utilization efficiency including water usage, land requirements, and energy inputs, detailed analysis of energy conversion rates from solar to biomass, protein yield per hectare calculations for different production systems, environmental footprint analysis including carbon emissions and waste streams, and economic models comparing solar-powered bioprotein production systems with traditional agriculture. The document includes extensive data on photovoltaic system efficiency, microbial growth optimization, protein production rates, cost-benefit analyses, scalability assessments, and projections for commercial implementation of photovoltaic-powered protein production facilities.`;
-  }
-  
-  if (name.includes('single cell protein') && name.includes('state-of-the-art')) {
-    return `This comprehensive review document covers the current state-of-the-art in single-cell protein production technology, including detailed industrial landscape analysis across global markets, extensive patent review covering intellectual property landscapes, commercial applications in food and feed industries, production methodologies for different microbial systems, strain development and genetic engineering approaches, fermentation technologies and bioprocess optimization, downstream processing and protein purification methods, comprehensive market analysis including growth projections, regulatory frameworks in different jurisdictions, and future prospects for microbial protein in the food industry. The review includes analysis of different microorganisms used for protein production, comparison of production methods, evaluation of economic factors, assessment of sustainability metrics, and detailed discussion of technological challenges and opportunities in the field.`;
-  }
-  
-  return `Comprehensive research document covering various aspects of single-cell protein production technology, including detailed methodology descriptions, practical applications in industrial settings, and implementation strategies for commercial protein production systems.`;
+  console.log(`Extracted ${extractedText.length} characters from PDF`);
+  return extractedText;
 }
