@@ -39,15 +39,19 @@ serve(async (req) => {
       const pdfBuffer = await pdfResponse.arrayBuffer();
       console.log(`PDF fetched, size: ${pdfBuffer.byteLength} bytes`);
       
-      // Use fallback content based on document name
-      const extractedText = getDocumentContent(documentName);
-      console.log(`Generated text content: ${extractedText.length} characters`);
+      // Simple PDF text extraction using basic parsing
+      const pdfText = await extractTextFromPDF(new Uint8Array(pdfBuffer));
+      
+      // Fallback to placeholder if extraction fails or returns too little text
+      const extractedText = (pdfText && pdfText.length > 500) ? pdfText : getDocumentContent(documentName);
+      console.log(`Final text content: ${extractedText.length} characters`);
       
       return new Response(
         JSON.stringify({ 
           extractedText: extractedText,
           fileSize: pdfBuffer.byteLength,
-          textLength: extractedText.length
+          textLength: extractedText.length,
+          extracted: pdfText && pdfText.length > 500 ? 'pdf' : 'fallback'
         }),
         { 
           status: 200, 
@@ -78,8 +82,68 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
-  }
 });
+
+async function extractTextFromPDF(pdfBytes: Uint8Array): Promise<string> {
+  try {
+    // Convert bytes to string for basic text search
+    const pdfString = new TextDecoder('utf-8', { fatal: false }).decode(pdfBytes);
+    
+    // Look for text streams in PDF
+    const textRegex = /BT\s*(.*?)\s*ET/gs;
+    const tjRegex = /\[(.*?)\]\s*TJ/g;
+    const streamRegex = /stream\s*([\s\S]*?)\s*endstream/g;
+    
+    let extractedText = '';
+    
+    // Extract text from TJ operations
+    let match;
+    while ((match = tjRegex.exec(pdfString)) !== null) {
+      let text = match[1];
+      // Clean up text - remove parentheses and decode basic characters
+      text = text.replace(/[()]/g, '').replace(/\\n/g, '\n').replace(/\\r/g, '\r');
+      extractedText += text + ' ';
+    }
+    
+    // Extract text from BT...ET blocks
+    while ((match = textRegex.exec(pdfString)) !== null) {
+      let text = match[1];
+      // Extract Tj operations
+      const tjMatches = text.match(/\((.*?)\)\s*Tj/g);
+      if (tjMatches) {
+        tjMatches.forEach(tj => {
+          const content = tj.match(/\((.*?)\)/);
+          if (content) {
+            extractedText += content[1] + ' ';
+          }
+        });
+      }
+    }
+    
+    // Look for readable text in streams
+    while ((match = streamRegex.exec(pdfString)) !== null) {
+      const stream = match[1];
+      // Extract readable ASCII text from streams
+      const readableText = stream.match(/[a-zA-Z0-9\s.,;:!?()[\]{}-]{4,}/g);
+      if (readableText) {
+        extractedText += readableText.join(' ') + ' ';
+      }
+    }
+    
+    // Clean up the extracted text
+    extractedText = extractedText
+      .replace(/\s+/g, ' ')  // Normalize whitespace
+      .replace(/[^\x20-\x7E\n\r\t]/g, '') // Remove non-printable characters
+      .trim();
+    
+    console.log(`PDF text extraction: ${extractedText.length} characters extracted`);
+    return extractedText;
+    
+  } catch (error) {
+    console.error('PDF text extraction failed:', error);
+    return '';
+  }
+}
 
 function getDocumentContent(filename: string): string {
   const name = filename.toLowerCase();
